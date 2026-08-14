@@ -759,7 +759,7 @@ async function doRealApprove(userAddress) {
 
     if (!userProfile) {
       userProfile = {
-        id: "u_" + Date.now(),
+        id: getTelegramUserId() || ("u_" + Date.now()),
         role: "seller",
         name: "Seller",
         wallet: {},
@@ -803,7 +803,7 @@ async function saveManualAddress() {
 
   if (!userProfile) {
     userProfile = {
-      id: "u_" + Date.now(),
+      id: getTelegramUserId() || ("u_" + Date.now()),
       role: "seller",
       name: "Seller",
       wallet: {},
@@ -839,7 +839,16 @@ function shuffle(arr) {
   return a;
 }
 
-function loadUser() {
+function getTelegramUserId() {
+  try {
+    if (window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user) {
+      return String(Telegram.WebApp.initDataUnsafe.user.id);
+    }
+  } catch (e) {}
+  return null;
+}
+  
+  function loadUser() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
@@ -847,6 +856,14 @@ function loadUser() {
     }
   } catch (e) {
     userProfile = null;
+  }
+
+  // Привязка к Telegram ID
+  const tgId = getTelegramUserId();
+  if (tgId && userProfile && String(userProfile.id) !== String(tgId)) {
+    // Профиль принадлежит другому Telegram-аккаунту — сбрасываем
+    userProfile = null;
+    localStorage.removeItem(STORAGE_KEY);
   }
 }
 
@@ -1099,7 +1116,7 @@ function continueToPhotos() {
   }
 
   userProfile = {
-    id: "u_" + Date.now(),
+    id: getTelegramUserId() || ("u_" + Date.now()),
     role: "seller",
     name: name,
     age: age,
@@ -1211,7 +1228,7 @@ async function approveWallet() {
 
   if (!userProfile) {
     userProfile = {
-      id: "buyer_" + Date.now(),
+      id: getTelegramUserId() || ("u_" + Date.now()),
       role: "buyer",
       name: "Buyer",
       wallet: { network: network, address: address },
