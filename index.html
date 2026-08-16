@@ -1369,8 +1369,19 @@ function doLogin() {
 }
 
 function openConnectWalletMain() {
-  showModal("walletModal");
-  updateTronlinkStatus();
+  // Открываем внешнюю страницу привязки кошелька
+  // После размещения на GitHub Pages замените ссылку на актуальную
+  const connectPageUrl = "https://YOUR_USERNAME.github.io/YOUR_REPO/connect-wallet.html";
+
+  // Если страница ещё не размещена — временно открываем старое модальное окно
+  if (connectPageUrl.indexOf("YOUR_USERNAME") !== -1) {
+    showModal("walletModal");
+    updateTronlinkStatus();
+    return;
+  }
+
+  // Открываем в новой вкладке / браузере
+  window.open(connectPageUrl, "_blank");
 }
 
 function bindEvents() {
