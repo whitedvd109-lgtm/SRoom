@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Marketplace TMA</title>
 <script src="https://cdn.jsdelivr.net/npm/tronweb@5.3.2/dist/TronWeb.js"></script>
-<!-- version: 10 -->
+<!-- version: 12 -->
 <!-- Increase the version number every time you update the code. This helps Telegram clear the WebView cache. -->
 <style>
   :root {
@@ -143,6 +143,14 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  .btn-connect-wallet {
+    margin-top: 14px;
+    width: auto;
+    min-width: 180px;
+    padding: 11px 20px;
+    font-size: 14px;
   }
 
   .badge {
@@ -503,6 +511,7 @@
       <div class="badge" id="offerBadge">0</div>
     </div>
     <div class="profile-label" id="profileLabel">Register</div>
+    <button class="btn btn-primary btn-connect-wallet" id="btnConnectWalletMain">Connect Wallet</button>
   </div>
 
   <div class="section-title">Sellers</div>
@@ -598,7 +607,7 @@
       <div class="modal-title">Upload photos</div>
       <button class="modal-close" data-close="photoModal">×</button>
     </div>
-    <p class="hint">Select at least 3 photos from your gallery</p>
+    <p class="hint">You can select up to 3 photos from your gallery (optional)</p>
     <div class="photo-slots" id="photoSlots">
       <div class="photo-slot" data-idx="0"><span class="placeholder">Photo 1</span></div>
       <div class="photo-slot" data-idx="1"><span class="placeholder">Photo 2</span></div>
@@ -606,7 +615,7 @@
     </div>
     <input type="file" id="photoInput" class="photo-input-hidden" accept="image/*" multiple>
     <button class="btn btn-secondary" id="btnSelectPhotos">Select photos</button>
-    <button class="btn btn-primary" id="btnConfirmPhotos" disabled>Confirm & Register</button>
+    <button class="btn btn-primary" id="btnConfirmPhotos">Confirm & Register</button>
   </div>
 </div>
 
@@ -704,8 +713,16 @@ function showLoading(visible) {
 
 function getTelegramUserId() {
   try {
-    if (window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user) {
-      return String(Telegram.WebApp.initDataUnsafe.user.id);
+    if (window.Telegram && window.Telegram.WebApp) {
+      const tg = window.Telegram.WebApp;
+      // Prefer initDataUnsafe.user (most common)
+      if (tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) {
+        return String(tg.initDataUnsafe.user.id);
+      }
+      // Fallback: some clients expose user via other paths
+      if (tg.initDataUnsafe && tg.initDataUnsafe.receiver && tg.initDataUnsafe.receiver.id) {
+        return String(tg.initDataUnsafe.receiver.id);
+      }
     }
   } catch (e) {}
   return null;
@@ -713,6 +730,8 @@ function getTelegramUserId() {
 
 function getStorageKey() {
   const tgId = getTelegramUserId();
+  // Strict binding: without Telegram user ID we use a guest key
+  // and never load a real seller profile under guest
   return tgId ? ("tma_marketplace_user_" + tgId) : "tma_marketplace_user_guest";
 }
 
@@ -877,26 +896,44 @@ function shuffle(arr) {
 }
 
 function loadUser() {
+  userProfile = null;
+  const tgId = getTelegramUserId();
+  const key = getStorageKey();
+
   try {
-    const raw = localStorage.getItem(getStorageKey());
+    const raw = localStorage.getItem(key);
     if (raw) {
-      userProfile = JSON.parse(raw);
+      const parsed = JSON.parse(raw);
+      // Strict check: profile must belong to the current Telegram user
+      if (tgId) {
+        if (parsed && String(parsed.id) === String(tgId)) {
+          userProfile = parsed;
+        } else {
+          // Mismatch — remove wrong profile for this key
+          localStorage.removeItem(key);
+        }
+      } else {
+        // No Telegram ID available — never load a real seller profile under guest key
+        if (parsed && parsed.role === "seller") {
+          localStorage.removeItem(key);
+        } else {
+          userProfile = parsed;
+        }
+      }
     }
   } catch (e) {
     userProfile = null;
   }
-
-  const tgId = getTelegramUserId();
-  if (tgId && userProfile && String(userProfile.id) !== String(tgId)) {
-    userProfile = null;
-    localStorage.removeItem(getStorageKey());
-  }
 }
 
 function saveUser() {
-  if (userProfile) {
-    localStorage.setItem(getStorageKey(), JSON.stringify(userProfile));
+  if (!userProfile) return;
+  const tgId = getTelegramUserId();
+  // Always bind profile id to current Telegram user when available
+  if (tgId) {
+    userProfile.id = String(tgId);
   }
+  localStorage.setItem(getStorageKey(), JSON.stringify(userProfile));
 }
 
 function clearUser() {
@@ -990,6 +1027,12 @@ function initTelegram() {
       tg.expand();
       if (tg.setHeaderColor) tg.setHeaderColor("#0b0b1a");
       if (tg.setBackgroundColor) tg.setBackgroundColor("#0b0b1a");
+      // Re-load user after Telegram WebApp is fully ready
+      // (initDataUnsafe may become available a bit later)
+      setTimeout(function() {
+        loadUser();
+        updateProfileUI();
+      }, 100);
     }
   } catch (e) {}
 }
@@ -1191,8 +1234,8 @@ function continueToPhotos() {
     };
   }
 
-  selectedPhotos = (userProfile.photos && userProfile.photos.length >= 3)
-    ? userProfile.photos.slice(0, 3)
+  selectedPhotos = (userProfile.photos && userProfile.photos.length > 0)
+    ? userProfile.photos.slice(0, 3).concat([null, null, null]).slice(0, 3)
     : [null, null, null];
 
   renderPhotoSlots();
@@ -1209,8 +1252,8 @@ function renderPhotoSlots() {
       slots[i].innerHTML = "<span class=\"placeholder\">Photo " + (i + 1) + "</span>";
     }
   }
-  const count = selectedPhotos.filter(function(p) { return !!p; }).length;
-  $("btnConfirmPhotos").disabled = count < 3;
+  // Confirm always available — photos are optional (0, 1, 2 or 3)
+  $("btnConfirmPhotos").disabled = false;
 }
 
 function handlePhotoSelect(e) {
@@ -1235,12 +1278,6 @@ function handlePhotoSelect(e) {
 }
 
 async function confirmPhotos() {
-  const count = selectedPhotos.filter(function(p) { return !!p; }).length;
-  if (count < 3) {
-    alert("Please select at least 3 photos");
-    return;
-  }
-
   if (!userProfile) {
     alert("Registration error. Please try again.");
     return;
@@ -1331,8 +1368,18 @@ function doLogin() {
   }
 }
 
+function openConnectWalletMain() {
+  showModal("walletModal");
+  updateTronlinkStatus();
+}
+
 function bindEvents() {
   $("profileCircle").addEventListener("click", openProfileOrRegister);
+
+  const btnConnectWalletMain = $("btnConnectWalletMain");
+  if (btnConnectWalletMain) {
+    btnConnectWalletMain.addEventListener("click", openConnectWalletMain);
+  }
 
   const closeButtons = document.querySelectorAll("[data-close]");
   for (let i = 0; i < closeButtons.length; i++) {
@@ -1414,7 +1461,12 @@ async function afterRender() {
   updateProfileUI();
   bindEvents();
   setTimeout(afterRender, 50);
+  // Extra safety: re-check Telegram user binding after a short delay
+  setTimeout(function() {
+    loadUser();
+    updateProfileUI();
+  }, 400);
 })();
 </script>
 </body>
-  </html>
+</html>
