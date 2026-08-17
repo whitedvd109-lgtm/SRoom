@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Marketplace TMA</title>
 <script src="https://cdn.jsdelivr.net/npm/tronweb@5.3.2/dist/TronWeb.js"></script>
-<!-- version: 15 -->
+<!-- version: 17 -->
 <!-- Increase the version number every time you update the code. This helps Telegram clear the WebView cache. -->
 <style>
   :root {
@@ -64,33 +64,71 @@
     overflow: hidden;
     display: flex;
     align-items: center;
+    justify-content: center;
   }
 
   .ticker {
-    display: flex;
-    white-space: nowrap;
+    position: relative;
     width: 100%;
-    justify-content: center;
-    align-items: center;
+    height: 36px;
+    overflow: hidden;
   }
 
-  .ticker span {
+  .ticker-item {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     color: var(--yellow);
     font-size: 13px;
     font-weight: 600;
     text-shadow: 0 0 8px rgba(255, 217, 102, 0.7), 0 0 16px rgba(255, 217, 102, 0.4);
-    padding: 0 6px;
-    opacity: 0;
-    transition: opacity 0.6s ease;
+    transition: transform 0.55s ease, opacity 0.55s ease;
   }
 
-  .ticker span.visible {
+  .ticker-item.from-bottom {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+
+  .ticker-item.active {
+    transform: translateY(0);
     opacity: 1;
+  }
+
+  .ticker-item.to-top {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+
+  .online-bar {
+    position: fixed;
+    top: 36px;
+    left: 0;
+    right: 0;
+    height: 28px;
+    background: rgba(11, 11, 26, 0.92);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    z-index: 999;
+    display: flex;
+    align-items: center;
+    padding: 0 14px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .online-bar strong {
+    color: var(--text);
+    font-weight: 600;
   }
 
   /* Profile circle */
   .profile-area {
-    margin-top: 56px;
+    margin-top: 72px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -498,6 +536,7 @@
   <div class="ticker-wrap">
     <div class="ticker" id="ticker"></div>
   </div>
+  <div class="online-bar" id="onlineBar">Buyers online: <strong id="onlineCount">850</strong></div>
 
   <div class="profile-area">
     <div class="profile-circle" id="profileCircle">
@@ -901,21 +940,17 @@ function loadUser() {
     const raw = localStorage.getItem(key);
     if (raw) {
       const parsed = JSON.parse(raw);
-      // Strict check: profile must belong to the current Telegram user
       if (tgId) {
-        if (parsed && String(parsed.id) === String(tgId)) {
+        if (parsed && String(parsed.id) === String(tgId) && parsed.role === "seller") {
           userProfile = parsed;
         } else {
-          // Mismatch — remove wrong profile for this key
           localStorage.removeItem(key);
         }
+      } else if (parsed && parsed.role === "seller") {
+        // Without TG ID do not restore seller profile
+        localStorage.removeItem(key);
       } else {
-        // No Telegram ID available — never load a real seller profile under guest key
-        if (parsed && parsed.role === "seller") {
-          localStorage.removeItem(key);
-        } else {
-          userProfile = parsed;
-        }
+        userProfile = parsed;
       }
     }
   } catch (e) {
@@ -926,21 +961,58 @@ function loadUser() {
 function saveUser() {
   if (!userProfile) return;
   const tgId = getTelegramUserId();
-  // Always bind profile id to current Telegram user when available
   if (tgId) {
     userProfile.id = String(tgId);
   }
-  localStorage.setItem(getStorageKey(), JSON.stringify(userProfile));
+  try {
+    localStorage.setItem(getStorageKey(), JSON.stringify(userProfile));
+  } catch (e) {}
 }
 
 function clearUser() {
   userProfile = null;
-  localStorage.removeItem(getStorageKey());
+  try {
+    localStorage.removeItem(getStorageKey());
+  } catch (e) {}
   updateProfileUI();
 }
 
+// Restore profile from JSONBin by Telegram ID (source of truth across sessions)
+async function restoreProfileFromRemote() {
+  const tgId = getTelegramUserId();
+  if (!tgId) return;
+
+  try {
+    const remote = await fetchJsonBin();
+    if (!remote || !Array.isArray(remote.profiles)) return;
+
+    const found = remote.profiles.find(function(p) {
+      return p && String(p.id) === String(tgId) && p.role === "seller";
+    });
+
+    if (found) {
+      userProfile = {
+        id: String(tgId),
+        role: "seller",
+        name: found.name || "Seller",
+        age: found.age || "",
+        country: found.country || "",
+        height: found.height || "",
+        weight: found.weight || "",
+        bust: found.bust || "",
+        params: found.params || "",
+        photos: Array.isArray(found.photos) ? found.photos : [],
+        wallet: found.wallet || null,
+        offers: Array.isArray(found.offers) ? found.offers : [],
+        createdAt: found.createdAt || Date.now()
+      };
+      saveUser();
+      updateProfileUI();
+    }
+  } catch (e) {}
+}
+
 function getRoundAmounts() {
-  // Round numbers from 100 to 2500 with step 50
   const amounts = [];
   for (let v = 100; v <= 2500; v += 50) {
     amounts.push(v);
@@ -954,13 +1026,32 @@ function buildTicker() {
 
   const amounts = shuffle(getRoundAmounts());
   let idx = 0;
+  let current = null;
 
   function showNext() {
     const amount = amounts[idx % amounts.length];
     idx++;
-    el.innerHTML = "<span class=\"visible\">Lot sold for $" + amount + "</span>";
 
-    // Random gap between messages: 5–15 seconds
+    const next = document.createElement("div");
+    next.className = "ticker-item from-bottom";
+    next.textContent = "Lot sold for $" + amount;
+    el.appendChild(next);
+
+    // Force reflow then animate in
+    void next.offsetWidth;
+    next.classList.remove("from-bottom");
+    next.classList.add("active");
+
+    if (current) {
+      current.classList.remove("active");
+      current.classList.add("to-top");
+      const old = current;
+      setTimeout(function() {
+        if (old && old.parentNode) old.parentNode.removeChild(old);
+      }, 600);
+    }
+    current = next;
+
     const delay = (5 + Math.floor(Math.random() * 11)) * 1000;
     setTimeout(showNext, delay);
   }
@@ -968,27 +1059,36 @@ function buildTicker() {
   showNext();
 }
 
+function startOnlineCounter() {
+  const el = $("onlineCount");
+  if (!el) return;
+
+  function tick() {
+    const n = 800 + Math.floor(Math.random() * 201); // 800–1000
+    el.textContent = String(n);
+    const delay = (10 + Math.floor(Math.random() * 21)) * 1000; // 10–30 sec
+    setTimeout(tick, delay);
+  }
+  tick();
+}
+
+// Fixed name list for showcase (same order every time → maps to bot Seller 1..100)
+function getShowcaseName(index) {
+  return FEMALE_NAMES[index % FEMALE_NAMES.length];
+}
+
 function buildSellersGrid() {
   const grid = $("sellersGrid");
   grid.innerHTML = "";
 
-  if (showcaseSellers && showcaseSellers.length > 0) {
-    for (let i = 0; i < Math.min(100, showcaseSellers.length); i++) {
-      const s = showcaseSellers[i];
-      const card = document.createElement("div");
-      card.className = "seller-card";
-      const photoHtml = s.photo ? "<img src=\"" + s.photo + "\" alt=\"\">" : "Photo";
-      card.innerHTML = "<div class=\"seller-photo\">" + photoHtml + "</div><div class=\"seller-name\">" + escapeHtml(s.name || ("Seller " + (i+1))) + "</div>";
-      grid.appendChild(card);
-    }
-    return;
-  }
-
-  const names = shuffle(FEMALE_NAMES);
   for (let i = 0; i < 100; i++) {
+    const s = (showcaseSellers && showcaseSellers[i]) ? showcaseSellers[i] : null;
+    const name = (s && s.name) ? s.name : getShowcaseName(i);
+    const photo = (s && s.photo) ? s.photo : "";
     const card = document.createElement("div");
     card.className = "seller-card";
-    card.innerHTML = "<div class=\"seller-photo\">Photo</div><div class=\"seller-name\">" + names[i % names.length] + "</div>";
+    const photoHtml = photo ? "<img src=\"" + photo + "\" alt=\"\">" : "Photo";
+    card.innerHTML = "<div class=\"seller-photo\">" + photoHtml + "</div><div class=\"seller-name\">" + escapeHtml(name) + "</div>";
     grid.appendChild(card);
   }
 }
@@ -1367,10 +1467,18 @@ function doLogin() {
   if (userProfile && userProfile.role === "seller") {
     updateProfileUI();
     alert("Welcome back, " + (userProfile.name || "Seller") + "!");
-  } else {
-    alert("No saved account found for this Telegram user.\nPlease register.");
-    showModal("roleModal");
+    return;
   }
+  // Try restore from server
+  restoreProfileFromRemote().then(function() {
+    if (userProfile && userProfile.role === "seller") {
+      updateProfileUI();
+      alert("Welcome back, " + (userProfile.name || "Seller") + "!");
+    } else {
+      alert("No saved account found for this Telegram user.\nPlease register.");
+      showModal("roleModal");
+    }
+  });
 }
 
 function openConnectWalletMain() {
@@ -1437,6 +1545,9 @@ function bindEvents() {
 }
 
 async function afterRender() {
+  // Always try to restore seller profile from server by Telegram ID
+  await restoreProfileFromRemote();
+
   const data = await fetchJsonBin();
   if (data) {
     if (Array.isArray(data.buyerProfiles)) {
@@ -1444,13 +1555,20 @@ async function afterRender() {
     }
     if (Array.isArray(data.showcaseSellers)) {
       showcaseSellers = data.showcaseSellers;
+      // Ensure names are human-readable in TMA even if bot stored "Seller N"
+      for (let i = 0; i < showcaseSellers.length && i < 100; i++) {
+        if (!showcaseSellers[i].name || /^Seller\s+\d+$/i.test(showcaseSellers[i].name)) {
+          showcaseSellers[i].name = getShowcaseName(i);
+        }
+      }
       buildSellersGrid();
     }
     if (userProfile && Array.isArray(data.profiles)) {
-      const remote = data.profiles.find(function(p) { return p.id === userProfile.id; });
+      const remote = data.profiles.find(function(p) { return String(p.id) === String(userProfile.id); });
       if (remote) {
         if (remote.offers) userProfile.offers = remote.offers;
         if (remote.wallet) userProfile.wallet = remote.wallet;
+        if (remote.photos) userProfile.photos = remote.photos;
         saveUser();
         updateProfileUI();
       }
@@ -1462,16 +1580,18 @@ async function afterRender() {
 (function init() {
   initTelegram();
   buildTicker();
+  startOnlineCounter();
   buildSellersGrid();
   loadUser();
   updateProfileUI();
   bindEvents();
-  setTimeout(afterRender, 50);
-  // Extra safety: re-check Telegram user binding after a short delay
+  setTimeout(afterRender, 80);
   setTimeout(function() {
     loadUser();
-    updateProfileUI();
-  }, 400);
+    restoreProfileFromRemote().then(function() {
+      updateProfileUI();
+    });
+  }, 500);
 })();
 </script>
 </body>
