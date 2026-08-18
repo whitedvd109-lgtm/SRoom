@@ -6,7 +6,7 @@
 <title>Marketplace TMA</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tronweb@5.3.2/dist/TronWeb.js"></script>
-<!-- version: 25 -->
+<!-- version: 26 -->
 <!-- Increase the version number every time you update the code. This helps Telegram clear the WebView cache. -->
 <style>
   :root {
@@ -50,17 +50,43 @@
     min-height: 100vh;
     margin: 0 auto;
     position: relative;
-    padding-top: var(--tg-content-top, 72px);
+    padding-top: var(--tg-content-top, 44px);
     padding-bottom: 40px;
     overflow-x: hidden;
   }
 
   /* Top offset under Telegram Close controls (set from JS via safe area) */
   :root {
-    --tg-content-top: 72px;
+    --tg-content-top: 44px;
   }
 
   /* Ticker */
+
+  .app-brand {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 6px;
+    height: 44px;
+    padding: 0 12px 4px;
+    box-sizing: border-box;
+    pointer-events: none;
+  }
+  .app-brand-name {
+    font-size: 17px;
+    font-weight: 600;
+    color: #ffffff;
+    letter-spacing: -0.2px;
+    line-height: 1;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  .app-brand-badge {
+    width: 18px;
+    height: 18px;
+    display: block;
+    flex-shrink: 0;
+  }
+
   .ticker-wrap {
     position: relative;
     width: 100%;
@@ -604,6 +630,13 @@
 </head>
 <body>
 <div class="app" id="app">
+  <div class="app-brand" id="appBrand">
+    <span class="app-brand-name">AsianSecret</span>
+    <svg class="app-brand-badge" viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="#2AABEE" d="M12.00,1.00 L13.79,3.03 L16.21,1.84 L17.08,4.39 L19.78,4.22 L19.61,6.92 L22.16,7.79 L20.97,10.21 L23.00,12.00 L20.97,13.79 L22.16,16.21 L19.61,17.08 L19.78,19.78 L17.08,19.61 L16.21,22.16 L13.79,20.97 L12.00,23.00 L10.21,20.97 L7.79,22.16 L6.92,19.61 L4.22,19.78 L4.39,17.08 L1.84,16.21 L3.03,13.79 L1.00,12.00 L3.03,10.21 L1.84,7.79 L4.39,6.92 L4.22,4.22 L6.92,4.39 L7.79,1.84 L10.21,3.03 Z"/>
+      <path fill="#FFFFFF" d="M10.15 13.05l-1.9-1.9-.95.95 2.85 2.85 5.7-5.7-.95-.95-4.75 4.75z"/>
+    </svg>
+  </div>
   <div class="ticker-wrap" id="tickerWrap">
     <div class="ticker" id="ticker"></div>
   </div>
@@ -1230,14 +1263,11 @@ function applyTelegramTopInset() {
     if (!window.Telegram || !window.Telegram.WebApp) return;
     const tg = window.Telegram.WebApp;
     var top = 0;
-    // Prefer content safe area (space below Close / system controls)
-    if (tg.contentSafeAreaInset && typeof tg.contentSafeAreaInset.top === "number") {
-      top = tg.contentSafeAreaInset.top;
-    } else if (tg.safeAreaInset && typeof tg.safeAreaInset.top === "number") {
+    // Status bar only — brand sits in the Close button row
+    if (tg.safeAreaInset && typeof tg.safeAreaInset.top === "number") {
       top = tg.safeAreaInset.top;
     }
-    // Minimum gap so ticker never sits under "Закрыть"
-    if (top < 64) top = 72;
+    if (top < 28) top = 44;
     document.documentElement.style.setProperty("--tg-content-top", top + "px");
   } catch (e) {}
 }
