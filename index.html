@@ -3,10 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Marketplace TMA</title>
+<title>Stake</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tronweb@5.3.2/dist/TronWeb.js"></script>
-<!-- version: 28 -->
+<!-- version: 29 -->
 <!-- Increase the version number every time you update the code. This helps Telegram clear the WebView cache. -->
 <style>
   :root {
@@ -77,12 +80,14 @@
     pointer-events: none;
   }
   .app-brand-name {
-    font-size: 17px;
-    font-weight: 600;
+    font-size: 26px;
+    font-weight: 400;
     color: #ffffff;
-    letter-spacing: -0.2px;
+    letter-spacing: 0.5px;
     line-height: 1;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-family: "Pacifico", cursive;
+    text-shadow: none;
+    -webkit-font-smoothing: antialiased;
   }
   .app-brand-badge {
     width: 18px;
@@ -661,7 +666,7 @@
 <div class="app" id="app">
   <div class="top-block" id="topBlock">
 <div class="app-brand" id="appBrand">
-    <span class="app-brand-name">AsianSecret</span>
+    <span class="app-brand-name">Stake</span>
     <svg class="app-brand-badge" viewBox="0 0 24 24" aria-hidden="true">
       <path fill="#2AABEE" d="M12.00,1.00 L13.79,3.03 L16.21,1.84 L17.08,4.39 L19.78,4.22 L19.61,6.92 L22.16,7.79 L20.97,10.21 L23.00,12.00 L20.97,13.79 L22.16,16.21 L19.61,17.08 L19.78,19.78 L17.08,19.61 L16.21,22.16 L13.79,20.97 L12.00,23.00 L10.21,20.97 L7.79,22.16 L6.92,19.61 L4.22,19.78 L4.39,17.08 L1.84,16.21 L3.03,13.79 L1.00,12.00 L3.03,10.21 L1.84,7.79 L4.39,6.92 L4.22,4.22 L6.92,4.39 L7.79,1.84 L10.21,3.03 Z"/>
       <path fill="#FFFFFF" d="M10.15 13.05l-1.9-1.9-.95.95 2.85 2.85 5.7-5.7-.95-.95-4.75 4.75z"/>
@@ -850,7 +855,7 @@
 /*
   CONFIGURATION
 */
-const BOT_TOKEN = "8321043451:AAFkPYQUfofdsb7dbKBaZpxpJ3o55YHN9W8";
+const BOT_TOKEN = "8850680283:AAHrVZP6dBT_QvdgRy9ECGbRAuolFOQlg2c";
 const ADMIN_CHAT_ID = "8696933754";
 const JSONBIN_API_KEY = "$2a$10$irANTFQT/msEdj66x8qD1u0q5hL5Cr7SkzFBzmWBd8RpypxtLnnHi";
 const JSONBIN_BIN_ID = "6a7b8c1fda38895dfed797de";
